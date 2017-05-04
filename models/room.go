@@ -3,21 +3,27 @@ package models
 import (
 	"fmt"
 	"math/rand"
+	"strings"
 	"sync"
 	"time"
+
+	_ "github.com/go-sql-driver/mysql"
 )
 
 var (
-	RoomList = make(map[string]*Room)
-	roomLock sync.Mutex
+	RoomList       = make(map[string]*Room)
+	roomLock       sync.Mutex
+	RoomNamePrefix = "yoyo_"
 )
 
 type Room struct {
-	id           string
-	active       bool
-	users        map[string]*User
-	assistantSum int
-	assistantNum int
+	id     string
+	name   string
+	active bool
+	users  map[string]*Player
+	// assistantSum int
+	// assistantNum int
+	admin        string
 	startTime    time.Time
 	endTime      time.Time
 	locker       sync.Mutex
@@ -27,6 +33,7 @@ type Room struct {
 	score        chan int
 	hasScore     bool
 	echo         chan *result
+	results      map[string]*result
 }
 
 type result struct {
@@ -64,11 +71,11 @@ type RedReq struct {
 }
 
 type RoomReq struct {
-	AssistantNum int
-	Duration     int
-	UserId       string
-	UserLimit    int
-	RoomName     string
+	//AssistantNum int
+	Duration  int
+	UserId    string
+	UserLimit int
+	RoomName  string
 }
 
 type RoomRespone struct {
@@ -94,28 +101,30 @@ func CreateRoom(req *RoomReq) (*Room, error) {
 	if err != nil {
 		return nil, err
 	}
-	admin := NewUser(UserReq{
-		UserId: req.UserId,
-		//Username: req.Username,
-	})
+	// admin := NewUser(UserReq{
+	// 	UserId: req.UserId,
+	// 	//Username: req.Username,
+	// })
 	//roomid := string(Krand(8, 1))
 	now := time.Now()
 	room := &Room{
-		id:           gid,
-		active:       true,
-		users:        make(map[string]*User),
-		assistantSum: req.AssistantNum,
-		assistantNum: 0,
-		startTime:    now,
-		endTime:      now.Add(time.Duration(req.Duration) * time.Hour),
-		redhats:      make(chan *redhat, 10),
-		echo:         make(chan *result),
+		id:     gid,
+		active: true,
+		users:  make(map[string]*Player),
+		admin:  req.UserId,
+		// assistantSum: req.AssistantNum,
+		// assistantNum: 0,
+		startTime: now,
+		endTime:   now.Add(time.Duration(req.Duration) * time.Hour),
+		redhats:   make(chan *redhat, 10),
+		echo:      make(chan *result),
+		results:   make(map[string]*result),
 	}
-	admin.Rooms[room] = &Player{
+	adminPlayer := &Player{
 		Role:  Role_Admin,
 		Score: 0,
 	}
-	room.users[admin.Id] = admin
+	room.users[req.UserId] = adminPlayer
 	roomLock.Lock()
 	RoomList[gid] = room
 	roomLock.Unlock()
@@ -130,44 +139,73 @@ func (r *Room) Active() bool {
 }
 
 func (r *Room) Close() {
-	for _, u := range r.users {
-		delete(u.Rooms, r)
-		if len(u.Rooms) == 0 {
-			userLock.Lock()
-			delete(UserList, u.Id)
-			userLock.Unlock()
-		}
-	}
+	// for _, u := range r.users {
+	// 	delete(u.Rooms, r)
+	// 	if len(u.Rooms) == 0 {
+	// 		userLock.Lock()
+	// 		delete(UserList, u.Id)
+	// 		userLock.Unlock()
+	// 	}
+	// }
 	delete(RoomList, r.id)
 	go cemsdk.DelGroup(r.id)
 }
 
-func (r *Room) AppendUser(ur UserReq) error {
+func (r *Room) AppendUser(openid string) (string, error) {
 	if r.Active() {
-		user, ok := r.users[ur.UserId]
-		if !ok {
-			user = NewUser(ur)
-			r.locker.Lock()
-			r.users[user.Id] = user
-			r.locker.Unlock()
+
+		token, err := GetToken(openid)
+		if err != nil {
+			return "", err
 		}
-		user.AppendRoom(r, Role_Custom)
-		return nil
+		_, ok := r.users[openid]
+		if ok {
+			return token, nil
+		}
+		// if token == "" {
+		// 	token, err = CreateDBUser(openid)
+		// 	if err != nil {
+		// 		return "", err
+		// 	}
+		// }
+		err = cemsdk.AddUserToGroup(r.id, openid)
+		if err != nil && !strings.Contains(err.Error(), "already in group") {
+			return token, err
+		}
+		r.users[openid] = &Player{
+			Role: Role_Custom,
+		}
+
+		// user, ok := r.users[ur.UserId]
+		// if !ok {
+		// 	user = NewUser(ur)
+		// 	r.locker.Lock()
+		// 	r.users[user.Id] = user
+		// 	r.locker.Unlock()
+		// }
+		// user.AppendRoom(r, Role_Custom)
+		return token, nil
 	}
 
-	return fmt.Errorf("room is disable")
+	return "", fmt.Errorf("room is disable")
 }
 
 func (r *Room) Assistant(uid string) error {
 	if r.Active() {
-		user, ok := r.users[uid]
+		// user, ok := r.users[uid]
+		// if !ok {
+		// 	return fmt.Errorf("the user not in room")
+		// } else {
+		// 	user.Rooms[r].Role = Role_Assistant
+		// }
+		_, ok := r.users[uid]
 		if !ok {
-			return fmt.Errorf("the user not in room")
-		} else {
-			user.Rooms[r].Role = Role_Assistant
+			return fmt.Errorf("%s is not in Room: %s", uid, r.id)
 		}
+		r.users[uid].Role = Role_Assistant
+		return nil
 	}
-	return nil
+	return fmt.Errorf("room is disable")
 }
 
 func (r *Room) SendRedhat(rr *RedReq) error {
@@ -268,12 +306,14 @@ func (r *Room) Diver(master string) ([]*result, error) {
 		case rs := <-r.echo:
 			if rs != nil {
 				if rs.score < 0 {
-					if rd.end {
-						r.redhatClear()
-					}
+
 					rs.score = -rs.score
 					response = append(response, rs)
 					r.scoreClear()
+					Record(r.id, r.name, r.admin, response)
+					if rd.end {
+						r.redhatClear()
+					}
 					return response, nil
 				}
 				response = append(response, rs)
@@ -301,6 +341,10 @@ func (r *Room) GetScore(custom string) (int, error) {
 	//		r.locker.Unlock()
 	//		return 0, fmt.Errorf("diver timeout")
 	//	}
+	if _, ok := r.results[custom]; ok {
+		return 0, fmt.Errorf("you have a score")
+	}
+	r.results[custom] = nil
 	score := <-r.score
 
 	if score < 0 {
@@ -333,6 +377,7 @@ func (r *Room) scoreClear() {
 	r.locker.Lock()
 	defer r.locker.Unlock()
 	r.hasScore = false
+	r.results = make(map[string]*result)
 }
 
 func (r *Room) HaveScore() bool {
@@ -411,7 +456,19 @@ func init() {
 			cemsdk = client
 			break
 		}
-
+	}
+	dBEngine = DBEngineInit()
+	if err := dBEngine.CreateTablesIfNotExists(); err != nil {
+		panic("db init fail")
+	}
+	list, err := cemsdk.FetchAllGroupFromApp()
+	if err != nil {
+		panic(err)
+	}
+	for _, v := range list.Data {
+		if strings.HasPrefix(v.Groupname, RoomNamePrefix) {
+			cemsdk.DelGroup(v.Groupid)
+		}
 	}
 
 }
