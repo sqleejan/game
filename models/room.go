@@ -21,6 +21,7 @@ type Room struct {
 	name   string
 	active bool
 	users  map[string]*Player
+	water  int
 	// assistantSum int
 	// assistantNum int
 	admin        string
@@ -39,28 +40,45 @@ type Room struct {
 type result struct {
 	custom string
 	score  int
+	bay    int
+}
+
+type Marks struct {
+	Master  string
+	Water   int
+	Results []Mark
 }
 
 type Mark struct {
 	Custom string
-	Score  int
+	Score  float32
+	Pay    int
 }
 
-func MakeReport(rs []*result) []Mark {
+func MakeReport(rs []*result) *Marks {
 	marks := []Mark{}
+	water := 0
 	for _, r := range rs {
 		marks = append(marks, Mark{
 			Custom: r.custom,
-			Score:  r.score,
+			Score:  float32(r.score) / 100,
+			Pay:    r.bay,
 		})
+		water += r.bay
 	}
-	return marks
+
+	return &Marks{
+		Master:  marks[0].Custom,
+		Water:   water,
+		Results: marks,
+	}
 }
 
 type redhat struct {
 	count   int
 	timeout time.Duration
 	end     bool
+	base    int
 }
 
 type RedReq struct {
@@ -68,6 +86,7 @@ type RedReq struct {
 	Timeout int
 	Diver   int
 	Master  string
+	Base    int
 }
 
 type RoomReq struct {
@@ -76,6 +95,7 @@ type RoomReq struct {
 	UserId    string
 	UserLimit int
 	RoomName  string
+	Water     int
 }
 
 type RoomRespone struct {
@@ -219,28 +239,33 @@ func (r *Room) SendRedhat(rr *RedReq) error {
 	if rr.Number > 10 {
 		return fmt.Errorf("number overflow")
 	}
-
-	if rr.Number == 1 {
-		r.redhats <- &redhat{
-			count:   rr.Diver,
-			timeout: time.Duration(rr.Timeout) * time.Minute,
-			end:     true,
-		}
-		r.locker.Lock()
-		r.hasRedhat = true
-		r.locker.Unlock()
-		return nil
+	if rr.Diver < 2 {
+		return fmt.Errorf("Diver < 2")
 	}
+
+	// if rr.Number == 1 {
+	// 	r.redhats <- &redhat{
+	// 		count:   rr.Diver,
+	// 		timeout: time.Duration(rr.Timeout) * time.Minute,
+	// 		end:     true,
+	// 	}
+	// 	r.locker.Lock()
+	// 	r.hasRedhat = true
+	// 	r.locker.Unlock()
+	// 	return nil
+	// }
 	for i := 0; i < rr.Number-1; i++ {
 		r.redhats <- &redhat{
 			count:   rr.Diver,
 			timeout: time.Duration(rr.Timeout) * time.Minute,
+			base:    rr.Base,
 		}
 	}
 
 	r.redhats <- &redhat{
 		count:   rr.Diver,
 		timeout: time.Duration(rr.Timeout) * time.Minute,
+		base:    rr.Base,
 		end:     true,
 	}
 	r.locker.Lock()
@@ -266,7 +291,7 @@ func (r *Room) MasterRedhat(master string) error {
 	return nil
 }
 
-func (r *Room) Diver(master string) ([]*result, error) {
+func (r *Room) Diver(master string) (*Marks, error) {
 
 	if !r.Active() {
 		return nil, fmt.Errorf("the room is disable")
@@ -293,7 +318,10 @@ func (r *Room) Diver(master string) ([]*result, error) {
 	r.hasScore = true
 	r.locker.Unlock()
 
-	response := []*result{}
+	response := []*result{&result{
+		custom: master,
+		score:  <-r.score,
+	}}
 	for {
 		select {
 		case <-time.After(rd.timeout):
@@ -310,11 +338,13 @@ func (r *Room) Diver(master string) ([]*result, error) {
 					rs.score = -rs.score
 					response = append(response, rs)
 					r.scoreClear()
-					Record(r.id, r.name, r.admin, response)
+					juge(response, rd.base, r.water)
+					reports := MakeReport(response)
+					Record(r.id, r.name, r.admin, reports)
 					if rd.end {
 						r.redhatClear()
 					}
-					return response, nil
+					return reports, nil
 				}
 				response = append(response, rs)
 
@@ -417,13 +447,93 @@ func Krand(size int, kind int) []byte {
 }
 
 func GenerateScore(count int, score chan int) {
+	sum := 1000
+	s1 := rand.New(rand.NewSource(time.Now().Unix() + rand.Int63n(100)))
+	//s2 := rand.New(rand.NewSource(time.Now().Unix() - 100))
+	suarray := make([]int, count)
 	if count != 1 {
 		for i := 0; i < count-1; i++ {
-			score <- 1
+			// c := rand.Intn(4) + 1
+			// var rs int
+			// for j := 0; j < c; j++ {
+			rs := s1.Intn((sum+i-count-1)/2) + 1
+			// }
+			//rs = rs
+
+			sum = sum - rs
+			suarray[i] = rs
+			//score <- rs
 		}
 	}
-	score <- -1
+	suarray[count-1] = sum
+	for i := 0; i < count; i++ {
+		if i == count-1 {
+			score <- -suarray[i]
+		} else {
+			score <- suarray[i]
+		}
 
+	}
+	//score <- -sum
+
+}
+
+func juge(rs []*result, base int, water int) {
+	length := len(rs)
+	if length < 2 {
+		return
+	}
+	begin := rs[0]
+	//begin.score = -begin.score
+	master := niu(begin.score)
+	sum := 0
+	for i := range rs {
+		if i == 0 {
+			continue
+		}
+		if rs[i].score < 0 {
+			rs[i].score = -rs[i].score
+		}
+		ba := niu(rs[i].score)
+		if ba < master {
+			rs[i].bay = -master * base
+			sum += master * base
+
+		}
+		if ba > master {
+			rs[i].bay = ba * base
+			sum -= ba * base
+		}
+		//rs[i].score = float32(rs[i].score) / 100
+	}
+	begin.bay = sum - water*len(rs)
+	//last.score = float32(last.score) / 100
+}
+
+func niu(score int) int {
+	a := score / 100
+	c := score % 10
+	b := (score - a*100 - c) / 10
+	//fmt.Println(a, b, c)
+	if a+1 == b && b+1 == c {
+		return 16
+	}
+	if a == b && b == c {
+		return 14
+	}
+	if b == c && c == 0 {
+		return 13
+	}
+	if b == c {
+		return 12
+	}
+	if b == 0 && c == 1 {
+		return 11
+	}
+	if b+c == 10 {
+		return 10
+	}
+	return (b + c) % 10
 }
 
 func Clear() {

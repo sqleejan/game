@@ -27,7 +27,7 @@ func (mc *MyCustomClaims) Token() string {
 	return ob
 }
 
-func Gen(rid string, openid string, wxToken string) string {
+func Gen(rid string, openid string, nicname string) string {
 
 	// Create the Claims
 	claims := jwt.StandardClaims{
@@ -35,8 +35,8 @@ func Gen(rid string, openid string, wxToken string) string {
 	}
 	claims.ExpiresAt = time.Now().Add(time.Hour * 10).Unix()
 	claims.Id = openid
-	claims.Audience = rid
-	claims.Issuer = wxToken
+	claims.Audience = nicname
+	//claims.Issuer = wxToken
 	claims.Subject = rid
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -60,7 +60,7 @@ func Parse(tokenString string) (*MyCustomClaims, error) {
 }
 
 func QRCode(rid string) ([]byte, error) {
-	return qrcode.Encode("https://example.org/auth/"+rid, qrcode.Medium, 256)
+	return qrcode.Encode(CodeUrl(rid), qrcode.Medium, 256)
 }
 
 const (

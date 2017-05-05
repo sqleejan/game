@@ -35,7 +35,8 @@ func (u *DBUser) Update(db gorp.SqlExecutor) error {
 	if u != nil {
 		now := time.Now()
 		u.UpdatedAt = now
-		return db.Update(u)
+		_, err := db.Update(u)
+		return err
 	}
 	return nil
 }
@@ -101,7 +102,7 @@ type DBRecord struct {
 	CreatedAt time.Time `db:"created_at" json:"created_at"`
 	RoomId    string    `db:"room_id" json:"room_id"`
 	RoomName  string    `db:"room_name" json:"room_name"`
-	Master    string	`db:"master" json:"master"`
+	Master    string    `db:"master" json:"master"`
 	Body      string    `db:"body" json:"body"`
 }
 
@@ -125,7 +126,15 @@ func (r *DBRecord) List(db gorp.SqlExecutor) ([]*DBRecord, error) {
 	return list, err
 }
 
-func Record(rid string,rname string,master string, body interface{}) error {
+func (r *DBRecord) ListDBRoom(db gorp.SqlExecutor) ([]*DBRecord, error) {
+	list := []*DBRecord{}
+	query := fmt.Sprintf(`select distinct room_id, room_name,master from %s `, r.TableName())
+
+	_, err := db.Select(&list, query)
+	return list, err
+}
+
+func Record(rid string, rname string, master string, body interface{}) error {
 	bs, err := json.Marshal(body)
 	if err != nil {
 		return err
