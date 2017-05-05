@@ -6,10 +6,31 @@ import (
 
 func init() {
 
+	beego.GlobalControllerRouter["game/controllers:AuthController"] = append(beego.GlobalControllerRouter["game/controllers:AuthController"],
+		beego.ControllerComments{
+			Method: "Token",
+			Router: `/token`,
+			AllowHTTPMethods: []string{"post"},
+			Params: nil})
+
+	beego.GlobalControllerRouter["game/controllers:AuthController"] = append(beego.GlobalControllerRouter["game/controllers:AuthController"],
+		beego.ControllerComments{
+			Method: "Create",
+			Router: `/user/create`,
+			AllowHTTPMethods: []string{"post"},
+			Params: nil})
+
 	beego.GlobalControllerRouter["game/controllers:CattleController"] = append(beego.GlobalControllerRouter["game/controllers:CattleController"],
 		beego.ControllerComments{
 			Method: "Post",
 			Router: `/create`,
+			AllowHTTPMethods: []string{"post"},
+			Params: nil})
+
+	beego.GlobalControllerRouter["game/controllers:CattleController"] = append(beego.GlobalControllerRouter["game/controllers:CattleController"],
+		beego.ControllerComments{
+			Method: "Master",
+			Router: `/master`,
 			AllowHTTPMethods: []string{"post"},
 			Params: nil})
 
@@ -85,8 +106,8 @@ func init() {
 
 	beego.GlobalControllerRouter["game/controllers:UserController"] = append(beego.GlobalControllerRouter["game/controllers:UserController"],
 		beego.ControllerComments{
-			Method: "Post",
-			Router: `/`,
+			Method: "Join",
+			Router: `/join`,
 			AllowHTTPMethods: []string{"post"},
 			Params: nil})
 
@@ -101,6 +122,13 @@ func init() {
 		beego.ControllerComments{
 			Method: "GetUser",
 			Router: `/:uid`,
+			AllowHTTPMethods: []string{"get"},
+			Params: nil})
+
+	beego.GlobalControllerRouter["game/controllers:UserController"] = append(beego.GlobalControllerRouter["game/controllers:UserController"],
+		beego.ControllerComments{
+			Method: "GetSelf",
+			Router: `/self`,
 			AllowHTTPMethods: []string{"get"},
 			Params: nil})
 

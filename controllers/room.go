@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"encoding/json"
+	"game/auth"
 	"game/models"
 
 	"github.com/astaxie/beego"
@@ -15,16 +16,34 @@ type RoomController struct {
 // @Title CreateRoom
 // @Description create room
 // @Param	body		body 	models.RoomReq	true		"body for room content"
+// @Param	token		query 	string	true		"The token for user"
 // @Success 200 {object} models.RoomRespone
 // @Failure 403 body is empty
 // @router / [post]
 func (u *RoomController) Post() {
-	var req models.RoomReq
-	err := json.Unmarshal(u.Ctx.Input.RequestBody, &req)
+	token := u.GetString("token")
+	mc, err := auth.Parse(token)
 	if err != nil {
-		u.Data["json"] = err.Error()
+		u.CustomAbort(405, err.Error())
+		return
+	}
+	if mc.Id != "admin" {
+		u.CustomAbort(405, "permission is not allow!")
+		return
+	}
+
+	var req models.RoomReq
+	err = json.Unmarshal(u.Ctx.Input.RequestBody, &req)
+	if err != nil {
+		u.CustomAbort(500, err.Error())
+		return
+		//u.Data["json"] = err.Error()
 	} else {
-		room := models.CreateRoom(&req)
+		room, err := models.CreateRoom(&req)
+		if err != nil {
+			u.CustomAbort(500, err.Error())
+			return
+		}
 		u.Data["json"] = room.Convert()
 	}
 
@@ -33,9 +52,20 @@ func (u *RoomController) Post() {
 
 // @Title GetAll
 // @Description get all Rooms
+// @Param	token		query 	string	true		"The token for user"
 // @Success 200 {object} models.RoomRespone
 // @router / [get]
 func (u *RoomController) GetAll() {
+	token := u.GetString("token")
+	mc, err := auth.Parse(token)
+	if err != nil {
+		u.CustomAbort(405, err.Error())
+		return
+	}
+	if mc.Id != "admin" {
+		u.CustomAbort(405, "permission is not allow!")
+		return
+	}
 	rooms := []interface{}{}
 	for _, r := range models.RoomList {
 		rooms = append(rooms, r.Convert())
@@ -46,17 +76,29 @@ func (u *RoomController) GetAll() {
 
 // @Title Get
 // @Description get user by roomid
+// @Param	token		query 	string	true		"The token for user"
 // @Param	roomid		path 	string	true		"The key for staticblock"
 // @Success 200 {object} models.RoomRespone
 // @Failure 403 :roomid is empty
 // @router /:roomid [get]
 func (u *RoomController) Get() {
+	token := u.GetString("token")
+	mc, err := auth.Parse(token)
+	if err != nil {
+		u.CustomAbort(405, err.Error())
+		return
+	}
 	roomid := u.GetString(":roomid")
 	if roomid != "" {
 		room, ok := models.RoomList[roomid]
 		if !ok {
-			u.Data["json"] = "the room in not exsit"
+			u.CustomAbort(500, "the room is not exist")
+			return
 		} else {
+			if !room.IsAnyone(mc.Id) && mc.Id != "admin" {
+				u.CustomAbort(405, "permission is not allow!")
+				return
+			}
 			u.Data["json"] = room.Convert()
 		}
 	}

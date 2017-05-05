@@ -1,0 +1,13 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "OlizrWed4ZqPM6Hg3M8Uby0W+PA=",
+			"path": "github.com/links123com/emsdk",
+			"revision": "1619dbd7a97b46498173cd161952b996fcd70b98",
+			"revisionTime": "2016-07-15T17:26:58Z"
+		}
+	],
+	"rootPath": "game"
+}
