@@ -118,12 +118,31 @@ func (r DBRecord) TableName() string {
 	return "record"
 }
 
-func (r *DBRecord) List(db gorp.SqlExecutor) ([]*DBRecord, error) {
+func (r *DBRecord) List(db gorp.SqlExecutor,size int,page int) ([]byte, error) {
 	list := []*DBRecord{}
 	query := fmt.Sprintf(`select * from %s where room_id = "%s"`, r.TableName(), r.RoomId)
 
 	_, err := db.Select(&list, query)
-	return list, err
+	if err!=nil{
+		return nil,err
+	}
+	resp := &struct {
+		Pagination
+		Data []*DBRecord `json:"data"`
+	}{
+	
+	}
+	if size==0{
+		size=20
+	}
+	start, end :=PageLocate(len(list),page,size)
+	resp.Total=len(list)
+	resp.TotalPage=resp.Total/size
+	if resp.Total%size!=0{
+		resp.TotalPage+=1
+	}
+	resp.Data=list[start:end]
+	return json.Marshal(resp)
 }
 
 func (r *DBRecord) ListDBRoom(db gorp.SqlExecutor) ([]*DBRecord, error) {
@@ -141,6 +160,8 @@ func Record(rid string, rname string, master string, body interface{}) error {
 	}
 	r := &DBRecord{
 		RoomId: rid,
+		RoomName: rname,
+		Master:master,
 		Body:   string(bs),
 	}
 	return r.Insert(dBEngine)

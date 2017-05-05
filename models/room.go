@@ -100,19 +100,24 @@ type RoomReq struct {
 
 type RoomRespone struct {
 	RoomId    string
+	RoomName  string
+	Admin     string
 	StartTime time.Time
 	EndTime   time.Time
 	Active    bool
 	LenUser   int
+	Users     map[string]*Player
 }
 
 func (r *Room) Convert() *RoomRespone {
 	return &RoomRespone{
 		RoomId:    r.id,
+		RoomName:  r.name,
 		StartTime: r.startTime,
 		EndTime:   r.endTime,
 		Active:    r.active,
 		LenUser:   len(r.users),
+		Users:     r.users,
 	}
 }
 
@@ -139,6 +144,8 @@ func CreateRoom(req *RoomReq) (*Room, error) {
 		redhats:   make(chan *redhat, 10),
 		echo:      make(chan *result),
 		results:   make(map[string]*result),
+		water:     req.Water,
+		name:      req.RoomName,
 	}
 	adminPlayer := &Player{
 		Role:  Role_Admin,
@@ -171,7 +178,32 @@ func (r *Room) Close() {
 	go cemsdk.DelGroup(r.id)
 }
 
-func (r *Room) AppendUser(openid string) (string, error) {
+func (r *Room) IsAdmin(uid string) bool {
+	return r.admin == uid
+}
+
+func (r *Room) IsCustom(uid string) bool {
+	u, ok := r.users[uid]
+	if !ok {
+		return false
+	}
+	return u.Role == Role_Custom
+}
+
+func (r *Room) IsAssistant(uid string) bool {
+	u, ok := r.users[uid]
+	if !ok {
+		return false
+	}
+	return u.Role == Role_Assistant
+}
+
+func (r *Room) IsAnyone(uid string) bool {
+	_, ok := r.users[uid]
+	return ok
+}
+
+func (r *Room) AppendUser(openid string, nicname string) (string, error) {
 	if r.Active() {
 
 		token, err := GetToken(openid)
@@ -193,7 +225,8 @@ func (r *Room) AppendUser(openid string) (string, error) {
 			return token, err
 		}
 		r.users[openid] = &Player{
-			Role: Role_Custom,
+			Role:    Role_Custom,
+			NicName: nicname,
 		}
 
 		// user, ok := r.users[ur.UserId]
@@ -314,14 +347,15 @@ func (r *Room) Diver(master string) (*Marks, error) {
 	r.echo = make(chan *result)
 
 	GenerateScore(rd.count, r.score)
+	masterscore := <-r.score
+	response := []*result{&result{
+		custom: master,
+		score:  masterscore,
+	}}
 	r.locker.Lock()
 	r.hasScore = true
 	r.locker.Unlock()
 
-	response := []*result{&result{
-		custom: master,
-		score:  <-r.score,
-	}}
 	for {
 		select {
 		case <-time.After(rd.timeout):
@@ -373,6 +407,9 @@ func (r *Room) GetScore(custom string) (int, error) {
 	//	}
 	if _, ok := r.results[custom]; ok {
 		return 0, fmt.Errorf("you have a score")
+	}
+	if custom == r.redhatMaster {
+		return 0, fmt.Errorf("you are master of the work")
 	}
 	r.results[custom] = nil
 	score := <-r.score

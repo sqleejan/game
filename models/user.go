@@ -30,8 +30,9 @@ type User struct {
 }
 
 type Player struct {
-	Role  int
-	Score int
+	Role    int
+	Score   int
+	NicName string
 }
 
 type UserReq struct {

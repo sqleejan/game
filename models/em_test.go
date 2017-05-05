@@ -3,12 +3,20 @@ package models
 import (
 	"fmt"
 	"testing"
-
-	"encoding/json"
 )
 
+type TmpClaims struct {
+	Audience  string `json:"aud,omitempty"`
+	ExpiresAt int64  `json:"exp,omitempty"`
+	Id        string `json:"jti,omitempty"`
+	IssuedAt  int64  `json:"iat,omitempty"`
+	Issuer    string `json:"iss,omitempty"`
+	NotBefore int64  `json:"nbf,omitempty"`
+	Subject   string `json:"sub,omitempty"`
+}
+
 func TestClient(t *testing.T) {
-	ch := make(chan int, 5)
+	/*ch := make(chan int, 5)
 	GenerateScore(5, ch)
 	rs1 := []*result{}
 	for i := 0; i < 5; i++ {
@@ -23,15 +31,18 @@ func TestClient(t *testing.T) {
 	// for _, v := range reps {
 	// 	fmt.Println(v.Score, v.Pay)
 	// }
-	return
+	return*/
 	cli, err := newEm()
 	if err != nil {
 		t.Error(err)
 		fmt.Println(err)
 		return
 	}
-
-	fmt.Println(CreateDBUser("openid3", "cc"))
+	gid, _ := cli.AddGroup("yoyo_test1", "", "leejan", true, false, 10, nil)
+	//fmt.Println(CreateDBUser("openid3", "cc"))
+	fmt.Println(cli.AddUserToGroup(gid, "room_c1"))
+	fmt.Println(cli.AddUserToGroup(gid, "room_c2"))
+	fmt.Println(cli.FetchUserFromGroup(gid))
 	return
 
 	//fmt.Println(cli.AddGroup("test1", "", "leejan", true, false, 10, nil))
@@ -42,21 +53,22 @@ func TestClient(t *testing.T) {
 	//fmt.Println(cli.GetUserToken("leejan", "123456"))
 	//fmt.Println(GetToken("test"))
 	//fmt.Println(Record("room1", `{"Name":"leejan"}`))
-	list, _ := cli.FetchAllGroupFromApp()
-	for _, v := range list.Data {
-		fmt.Println(v.Groupname)
-	}
-	req := RoomReq{
-		Duration:  10,
-		UserId:    "leejan",
-		UserLimit: 100,
-		RoomName:  "yoyo_test1",
-	}
-	CreateRoom(&req)
-	fmt.Println("-----------------------------------")
-	list, _ = cli.FetchAllGroupFromApp()
-	for _, v := range list.Data {
-		fmt.Println(v.Groupname)
-	}
+
+	// list, _ := cli.FetchAllGroupFromApp()
+	// for _, v := range list.Data {
+	// 	fmt.Println(v.Groupname)
+	// }
+	// req := RoomReq{
+	// 	Duration:  10,
+	// 	UserId:    "leejan",
+	// 	UserLimit: 100,
+	// 	RoomName:  "yoyo_test1",
+	// }
+	// CreateRoom(&req)
+	// fmt.Println("-----------------------------------")
+	// list, _ = cli.FetchAllGroupFromApp()
+	// for _, v := range list.Data {
+	// 	fmt.Println(v.Groupname)
+	// }
 	//fmt.Println(cli.FetchAllGroupFromApp())
 }
