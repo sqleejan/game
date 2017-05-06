@@ -31,7 +31,7 @@ func (o *AuthController) Token() {
 // @Title 临时创建用户
 // @Description 临时创建用户
 // @Param	uid		query 	string	true		"The uid for user"
-// @Param	nicname		query 	string	true		"The nicname for user"
+// @Param	nicname	query 	string	true		"The nicname for user"
 // @Success 200 {string} set success
 // @Failure 403 uid is null
 // @router /user/create [post]
@@ -42,8 +42,8 @@ func (u *AuthController) Create() {
 	if err != nil {
 		u.CustomAbort(500, err.Error())
 		return
-	} else {
-		u.Data["json"] = "ok"
 	}
+	u.Data["json"] = "ok"
+
 	u.ServeJSON()
 }

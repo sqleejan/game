@@ -29,7 +29,7 @@
                         "description": "The object content",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/.TmpClaims"
+                            "$ref": "#/definitions/models.TmpClaims"
                         }
                     }
                 ],
@@ -104,7 +104,7 @@
                         "description": "body for rancher",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/.RedReq"
+                            "$ref": "#/definitions/models.RedReq"
                         }
                     }
                 ],
@@ -218,6 +218,43 @@
             }
         },
         "/room/": {
+            "post": {
+                "tags": [
+                    "room"
+                ],
+                "description": "create room",
+                "operationId": "RoomController.CreateRoom",
+                "parameters": [
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "description": "body for room content",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.RoomReq"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "token",
+                        "description": "The token for user",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "schema": {
+                            "$ref": "#/definitions/models.TmpRespone"
+                        }
+                    },
+                    "403": {
+                        "description": "body is empty"
+                    }
+                }
+            }
+        },
+        "/room/list": {
             "get": {
                 "tags": [
                     "room"
@@ -236,43 +273,45 @@
                 "responses": {
                     "200": {
                         "schema": {
-                            "$ref": "#/definitions/.RoomRespone"
+                            "$ref": "#/definitions/models.TmpRespone"
                         }
                     }
                 }
-            },
-            "post": {
+            }
+        },
+        "/room/listdb": {
+            "get": {
                 "tags": [
                     "room"
                 ],
-                "description": "create room",
-                "operationId": "RoomController.CreateRoom",
+                "description": "get room Listdb",
+                "operationId": "RoomController.Listdb",
                 "parameters": [
-                    {
-                        "in": "body",
-                        "name": "body",
-                        "description": "body for room content",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/.RoomReq"
-                        }
-                    },
                     {
                         "in": "query",
                         "name": "token",
                         "description": "The token for user",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "limit",
+                        "description": "The default is 20",
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    {
+                        "in": "query",
+                        "name": "page",
+                        "description": "The default is 1",
+                        "type": "integer",
+                        "format": "int64"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "schema": {
-                            "$ref": "#/definitions/.RoomRespone"
-                        }
-                    },
-                    "403": {
-                        "description": "body is empty"
+                        "description": "{string} success"
                     }
                 }
             }
@@ -303,8 +342,55 @@
                 "responses": {
                     "200": {
                         "schema": {
-                            "$ref": "#/definitions/.RoomRespone"
+                            "$ref": "#/definitions/models.TmpRespone"
                         }
+                    },
+                    "403": {
+                        "description": ":roomid is empty"
+                    }
+                }
+            }
+        },
+        "/room/{roomid}/bill": {
+            "get": {
+                "tags": [
+                    "room"
+                ],
+                "description": "get bill for roomid",
+                "operationId": "RoomController.Bill",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "token",
+                        "description": "The token for user",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "limit",
+                        "description": "The default is 20",
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    {
+                        "in": "query",
+                        "name": "page",
+                        "description": "The default is 1",
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    {
+                        "in": "path",
+                        "name": "roomid",
+                        "description": "The key for staticblock",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{string} success"
                     },
                     "403": {
                         "description": ":roomid is empty"
@@ -385,6 +471,38 @@
                 }
             }
         },
+        "/user/list": {
+            "get": {
+                "tags": [
+                    "user"
+                ],
+                "description": "Get Users",
+                "operationId": "UserController.玩家列表",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "token",
+                        "description": "The token for user",
+                        "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "roomid",
+                        "description": "The roomid for user",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{string} set success"
+                    },
+                    "403": {
+                        "description": "uid is null"
+                    }
+                }
+            }
+        },
         "/user/self": {
             "get": {
                 "tags": [
@@ -409,63 +527,140 @@
                     }
                 }
             }
-        },
-        "/user/{uid}": {
-            "get": {
-                "tags": [
-                    "user"
-                ],
-                "description": "Get User",
-                "operationId": "UserController.Get User",
-                "parameters": [
-                    {
-                        "in": "query",
-                        "name": "token",
-                        "description": "The token for user",
-                        "required": true,
-                        "type": "string"
-                    },
-                    {
-                        "in": "path",
-                        "name": "uid",
-                        "description": "The uid for user",
-                        "required": true,
-                        "type": "string"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "{string} set success"
-                    },
-                    "403": {
-                        "description": "uid is null"
-                    }
-                }
-            }
         }
     },
     "definitions": {
-        ".Object": {
-            "type": "object"
-        },
-        ".RedReq": {
-            "type": "object"
-        },
-        ".RoomReq": {
-            "type": "object"
-        },
-        ".RoomRespone": {
-            "type": "object"
-        },
         ".StandardClaims": {
-            "type": "object"
-        },
-        ".TmpClaims": {
             "type": "object"
         },
         "auth.MyCustomClaims": {
             "title": "MyCustomClaims",
             "type": "object"
+        },
+        "models.Object": {
+            "title": "Object",
+            "type": "object",
+            "properties": {
+                "ObjectId": {
+                    "type": "string"
+                },
+                "PlayerName": {
+                    "type": "string"
+                },
+                "Score": {
+                    "type": "integer",
+                    "format": "int64"
+                }
+            }
+        },
+        "models.RedReq": {
+            "title": "RedReq",
+            "type": "object",
+            "properties": {
+                "Base": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "Diver": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "Master": {
+                    "type": "string"
+                },
+                "Number": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "Timeout": {
+                    "type": "integer",
+                    "format": "int64"
+                }
+            }
+        },
+        "models.RoomReq": {
+            "title": "RoomReq",
+            "type": "object",
+            "properties": {
+                "Duration": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "RoomName": {
+                    "type": "string"
+                },
+                "UserId": {
+                    "type": "string"
+                },
+                "UserLimit": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "Water": {
+                    "type": "integer",
+                    "format": "int64"
+                }
+            }
+        },
+        "models.TmpClaims": {
+            "title": "TmpClaims",
+            "type": "object",
+            "properties": {
+                "aud": {
+                    "type": "string"
+                },
+                "exp": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "iat": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "iss": {
+                    "type": "string"
+                },
+                "jti": {
+                    "type": "string"
+                },
+                "nbf": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "sub": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.TmpRespone": {
+            "title": "TmpRespone",
+            "type": "object",
+            "properties": {
+                "Active": {
+                    "type": "boolean"
+                },
+                "Admin": {
+                    "type": "string"
+                },
+                "EndTime": {
+                    "type": "string",
+                    "format": "string"
+                },
+                "LenUser": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "RoomId": {
+                    "type": "string"
+                },
+                "RoomName": {
+                    "type": "string"
+                },
+                "StartTime": {
+                    "type": "string",
+                    "format": "string"
+                }
+            }
         }
     },
     "tags": [

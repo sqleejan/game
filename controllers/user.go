@@ -92,13 +92,13 @@ func (u *UserController) Assistant() {
 // @router /list [get]
 func (u *UserController) List() {
 	rid := u.GetString("roomid")
-	room, ok := models.RoomList[rid]
+	_, ok := models.RoomList[rid]
 	if !ok {
 		u.CustomAbort(500, "the room is not exist")
 		return
-	} else {
-		u.Data["json"]=
 	}
+	u.Data["json"] = ""
+
 	u.ServeJSON()
 }
 

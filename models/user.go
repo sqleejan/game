@@ -2,6 +2,7 @@ package models
 
 import (
 	"sync"
+	"time"
 )
 
 const (
@@ -38,6 +39,16 @@ type Player struct {
 type UserReq struct {
 	UserId   string
 	Username string
+}
+
+type TmpRespone struct {
+	RoomId    string
+	RoomName  string
+	Admin     string
+	StartTime time.Time
+	EndTime   time.Time
+	Active    bool
+	LenUser   int
 }
 
 func NewUser(u UserReq) *User {

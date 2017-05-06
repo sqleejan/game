@@ -93,7 +93,7 @@ func init() {
 	beego.GlobalControllerRouter["game/controllers:RoomController"] = append(beego.GlobalControllerRouter["game/controllers:RoomController"],
 		beego.ControllerComments{
 			Method: "GetAll",
-			Router: `/`,
+			Router: `/list`,
 			AllowHTTPMethods: []string{"get"},
 			Params: nil})
 
@@ -101,6 +101,20 @@ func init() {
 		beego.ControllerComments{
 			Method: "Get",
 			Router: `/:roomid`,
+			AllowHTTPMethods: []string{"get"},
+			Params: nil})
+
+	beego.GlobalControllerRouter["game/controllers:RoomController"] = append(beego.GlobalControllerRouter["game/controllers:RoomController"],
+		beego.ControllerComments{
+			Method: "Bill",
+			Router: `/:roomid/bill`,
+			AllowHTTPMethods: []string{"get"},
+			Params: nil})
+
+	beego.GlobalControllerRouter["game/controllers:RoomController"] = append(beego.GlobalControllerRouter["game/controllers:RoomController"],
+		beego.ControllerComments{
+			Method: "ListDB",
+			Router: `/listdb`,
 			AllowHTTPMethods: []string{"get"},
 			Params: nil})
 
@@ -120,8 +134,8 @@ func init() {
 
 	beego.GlobalControllerRouter["game/controllers:UserController"] = append(beego.GlobalControllerRouter["game/controllers:UserController"],
 		beego.ControllerComments{
-			Method: "GetUser",
-			Router: `/:uid`,
+			Method: "List",
+			Router: `/list`,
 			AllowHTTPMethods: []string{"get"},
 			Params: nil})
 

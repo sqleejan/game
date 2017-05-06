@@ -17,7 +17,7 @@ type RoomController struct {
 // @Description create room
 // @Param	body		body 	models.RoomReq	true		"body for room content"
 // @Param	token		query 	string	true		"The token for user"
-// @Success 200 {object} models.RoomRespone
+// @Success 200 {object} models.TmpRespone
 // @Failure 403 body is empty
 // @router / [post]
 func (u *RoomController) Post() {
@@ -53,8 +53,8 @@ func (u *RoomController) Post() {
 // @Title GetAll
 // @Description get all Rooms
 // @Param	token		query 	string	true		"The token for user"
-// @Success 200 {object} models.RoomRespone
-// @router / [get]
+// @Success 200 {object} models.TmpRespone
+// @router /list [get]
 func (u *RoomController) GetAll() {
 	token := u.GetString("token")
 	mc, err := auth.Parse(token)
@@ -78,7 +78,7 @@ func (u *RoomController) GetAll() {
 // @Description get user by roomid
 // @Param	token		query 	string	true		"The token for user"
 // @Param	roomid		path 	string	true		"The key for staticblock"
-// @Success 200 {object} models.RoomRespone
+// @Success 200 {object} models.TmpRespone
 // @Failure 403 :roomid is empty
 // @router /:roomid [get]
 func (u *RoomController) Get() {
@@ -105,64 +105,90 @@ func (u *RoomController) Get() {
 	u.ServeJSON()
 }
 
-//// @Title Update
-//// @Description update the user
-//// @Param	uid		path 	string	true		"The uid you want to update"
-//// @Param	body		body 	models.User	true		"body for user content"
-//// @Success 200 {object} models.User
-//// @Failure 403 :uid is not int
-//// @router /:uid [put]
-//func (u *UserController) Put() {
-//	uid := u.GetString(":uid")
-//	if uid != "" {
-//		var user models.User
-//		json.Unmarshal(u.Ctx.Input.RequestBody, &user)
-//		uu, err := models.UpdateUser(uid, &user)
-//		if err != nil {
-//			u.Data["json"] = err.Error()
-//		} else {
-//			u.Data["json"] = uu
-//		}
-//	}
-//	u.ServeJSON()
-//}
+// @Title Bill
+// @Description get bill for roomid
+// @Param	token		query 	string	true		"The token for user"
+// @Param	limit		query 	int		false		"The default is 20"
+// @Param	page		query 	int		false		"The default is 1"
+// @Param	roomid		path 	string	true		"The key for staticblock"
+// @Success 200 {string} success
+// @Failure 403 :roomid is empty
+// @router /:roomid/bill [get]
+func (u *RoomController) Bill() {
+	token := u.GetString("token")
+	mc, err := auth.Parse(token)
+	if err != nil {
+		u.CustomAbort(405, err.Error())
+		return
+	}
+	roomid := u.GetString(":roomid")
+	page, err := u.GetInt("page", 1)
+	if err != nil {
+		u.CustomAbort(405, err.Error())
+		return
+	}
+	limit, err := u.GetInt("limit", 20)
+	if err != nil {
+		u.CustomAbort(405, err.Error())
+		return
+	}
+	if roomid != "" {
+		room, ok := models.RoomList[roomid]
+		if !ok && mc.Id != "admin" {
+			u.CustomAbort(500, "the room is not exist")
+			return
+		}
+		if !(room != nil && room.IsAnyone(mc.Id)) && mc.Id != "admin" {
+			u.CustomAbort(405, "permission is not allow!")
+			return
+		}
+		b, err := models.BillList(roomid, page, limit)
+		if err != nil {
+			u.CustomAbort(500, err.Error())
+			return
+		}
+		u.Data["json"] = b
 
-//// @Title Delete
-//// @Description delete the user
-//// @Param	uid		path 	string	true		"The uid you want to delete"
-//// @Success 200 {string} delete success!
-//// @Failure 403 uid is empty
-//// @router /:uid [delete]
-//func (u *UserController) Delete() {
-//	uid := u.GetString(":uid")
-//	models.DeleteUser(uid)
-//	u.Data["json"] = "delete success!"
-//	u.ServeJSON()
-//}
+	}
+	u.ServeJSON()
+}
 
-//// @Title Login
-//// @Description Logs user into the system
-//// @Param	username		query 	string	true		"The username for login"
-//// @Param	password		query 	string	true		"The password for login"
-//// @Success 200 {string} login success
-//// @Failure 403 user not exist
-//// @router /login [get]
-//func (u *UserController) Login() {
-//	username := u.GetString("username")
-//	password := u.GetString("password")
-//	if models.Login(username, password) {
-//		u.Data["json"] = "login success"
-//	} else {
-//		u.Data["json"] = "user not exist"
-//	}
-//	u.ServeJSON()
-//}
+// @Title Listdb
+// @Description get room Listdb
+// @Param	token		query 	string	true		"The token for user"
+// @Param	limit		query 	int		false		"The default is 20"
+// @Param	page		query 	int		false		"The default is 1"
+// @Success 200 {string} success
+// @router /listdb [get]
+func (u *RoomController) ListDB() {
+	token := u.GetString("token")
+	mc, err := auth.Parse(token)
+	if err != nil {
+		u.CustomAbort(405, err.Error())
+		return
+	}
+	if mc.Id != "admin" {
+		u.CustomAbort(405, "permission is not allow!")
+		return
+	}
+	page, err := u.GetInt("page", 1)
+	if err != nil {
+		u.CustomAbort(405, err.Error())
+		return
+	}
+	limit, err := u.GetInt("limit", 20)
+	if err != nil {
+		u.CustomAbort(405, err.Error())
+		return
+	}
 
-//// @Title logout
-//// @Description Logs out current logged in user session
-//// @Success 200 {string} logout success
-//// @router /logout [get]
-//func (u *UserController) Logout() {
-//	u.Data["json"] = "logout success"
-//	u.ServeJSON()
-//}
+	ob := &models.DBRecord{}
+	list, err := ob.ListDBRoom(page, limit)
+	if err != nil {
+		u.CustomAbort(500, err.Error())
+		return
+	}
+	u.Data["json"] = list
+
+	u.ServeJSON()
+}

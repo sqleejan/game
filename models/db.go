@@ -118,39 +118,61 @@ func (r DBRecord) TableName() string {
 	return "record"
 }
 
-func (r *DBRecord) List(db gorp.SqlExecutor,size int,page int) ([]byte, error) {
+func (r *DBRecord) List(db gorp.SqlExecutor, page int, size int) (interface{}, error) {
 	list := []*DBRecord{}
 	query := fmt.Sprintf(`select * from %s where room_id = "%s"`, r.TableName(), r.RoomId)
 
 	_, err := db.Select(&list, query)
-	if err!=nil{
-		return nil,err
+	if err != nil {
+		return nil, err
 	}
 	resp := &struct {
 		Pagination
 		Data []*DBRecord `json:"data"`
-	}{
-	
+	}{}
+	if size == 0 {
+		size = 20
 	}
-	if size==0{
-		size=20
+	if page == 0 {
+		page = 1
 	}
-	start, end :=PageLocate(len(list),page,size)
-	resp.Total=len(list)
-	resp.TotalPage=resp.Total/size
-	if resp.Total%size!=0{
-		resp.TotalPage+=1
+	start, end := PageLocate(len(list), size, page)
+	resp.Total = len(list)
+	resp.TotalPage = resp.Total / size
+	if resp.Total%size != 0 {
+		resp.TotalPage += 1
 	}
-	resp.Data=list[start:end]
-	return json.Marshal(resp)
+	resp.Data = list[start:end]
+	return resp, nil
 }
 
-func (r *DBRecord) ListDBRoom(db gorp.SqlExecutor) ([]*DBRecord, error) {
+func (r *DBRecord) ListDBRoom(page int, size int) (interface{}, error) {
 	list := []*DBRecord{}
 	query := fmt.Sprintf(`select distinct room_id, room_name,master from %s `, r.TableName())
 
-	_, err := db.Select(&list, query)
-	return list, err
+	_, err := dBEngine.Select(&list, query)
+	if err != nil {
+		return nil, err
+	}
+	resp := &struct {
+		Pagination
+		Data []*DBRecord `json:"data"`
+	}{}
+	if size == 0 {
+		size = 20
+	}
+	if page == 0 {
+		page = 1
+	}
+	start, end := PageLocate(len(list), size, page)
+	resp.Total = len(list)
+	resp.TotalPage = resp.Total / size
+	if resp.Total%size != 0 {
+		resp.TotalPage += 1
+	}
+	resp.Data = list[start:end]
+	return resp, nil
+	//return list, err
 }
 
 func Record(rid string, rname string, master string, body interface{}) error {
@@ -159,12 +181,19 @@ func Record(rid string, rname string, master string, body interface{}) error {
 		return err
 	}
 	r := &DBRecord{
-		RoomId: rid,
+		RoomId:   rid,
 		RoomName: rname,
-		Master:master,
-		Body:   string(bs),
+		Master:   master,
+		Body:     string(bs),
 	}
 	return r.Insert(dBEngine)
+}
+
+func BillList(rid string, page int, limit int) (interface{}, error) {
+	rs := &DBRecord{
+		RoomId: rid,
+	}
+	return rs.List(dBEngine, page, limit)
 }
 
 var dBEngine *gorp.DbMap
