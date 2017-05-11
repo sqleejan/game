@@ -29,8 +29,22 @@ func init() {
 
 	beego.GlobalControllerRouter["game/controllers:CattleController"] = append(beego.GlobalControllerRouter["game/controllers:CattleController"],
 		beego.ControllerComments{
+			Method: "Config",
+			Router: `/config`,
+			AllowHTTPMethods: []string{"post"},
+			Params: nil})
+
+	beego.GlobalControllerRouter["game/controllers:CattleController"] = append(beego.GlobalControllerRouter["game/controllers:CattleController"],
+		beego.ControllerComments{
 			Method: "Master",
 			Router: `/master`,
+			AllowHTTPMethods: []string{"post"},
+			Params: nil})
+
+	beego.GlobalControllerRouter["game/controllers:CattleController"] = append(beego.GlobalControllerRouter["game/controllers:CattleController"],
+		beego.ControllerComments{
+			Method: "Discard",
+			Router: `/discard`,
 			AllowHTTPMethods: []string{"post"},
 			Params: nil})
 

@@ -17,9 +17,7 @@ type CattleController struct {
 // @Description set rancher
 // @Param	token		query 	string	true		"The token for user"
 // @Param	roomid		query 	string	true		"The roomid for rancher"
-// @Param	body		body 	models.RedReq	true		"body for rancher"
 // @Success 200 {string} success
-// @Failure 403 body is empty
 // @router /create [post]
 func (u *CattleController) Post() {
 	token := u.GetString("token")
@@ -42,13 +40,55 @@ func (u *CattleController) Post() {
 			u.CustomAbort(405, "permission is not allow!")
 			return
 		}
+
+		if err := room.SendRedhat(); err != nil {
+			u.CustomAbort(500, err.Error())
+			return
+		} else {
+			u.Data["json"] = "ok"
+		}
+
+	}
+
+	u.ServeJSON()
+}
+
+// @Title 配置庄
+// @Description config redhat
+// @Param	token		query 	string	true		"The token for user"
+// @Param	roomid		query 	string	true		"The roomid for rancher"
+// @Param	body		body 	models.RedReq	true		"body for rancher"
+// @Success 200 {string} success
+// @Failure 403 body is empty
+// @router /config [post]
+func (u *CattleController) Config() {
+	token := u.GetString("token")
+	mc, err := auth.Parse(token)
+	if err != nil {
+		u.CustomAbort(405, err.Error())
+		return
+	}
+	// if mc.Id != "admin" {
+	// 	u.CustomAbort(405, "permission is not allow!")
+	// 	return
+	// }
+	rid := u.GetString("roomid")
+	room, ok := models.RoomList[rid]
+	if !ok {
+		u.CustomAbort(500, "the room is not exist")
+		return
+	} else {
+		if !room.IsAnyone(mc.Id) {
+			u.CustomAbort(405, "permission is not allow!")
+			return
+		}
 		var req models.RedReq
 		err := json.Unmarshal(u.Ctx.Input.RequestBody, &req)
 		if err != nil {
 			u.CustomAbort(500, err.Error())
 			return
 		} else {
-			if err := room.SendRedhat(&req); err != nil {
+			if err := room.ConfigRedhat(mc.Id, &req); err != nil {
 				u.CustomAbort(500, err.Error())
 				return
 			} else {
@@ -90,6 +130,46 @@ func (u *CattleController) Master() {
 		}
 		if err := room.MasterRedhat(mc.Id); err != nil {
 			u.Data["json"] = "fail"
+		} else {
+			u.Data["json"] = "ok"
+		}
+
+	}
+
+	u.ServeJSON()
+}
+
+// @Title  弃庄
+// @Description 弃庄
+// @Param	token		query 	string	true		"The token for user"
+// @Param	roomid		query 	string	true		"The roomid for rancher"
+// @Success 200 {string} success
+// @router /discard [post]
+func (u *CattleController) Discard() {
+	token := u.GetString("token")
+	mc, err := auth.Parse(token)
+	if err != nil {
+		u.CustomAbort(405, err.Error())
+		return
+	}
+	// if mc.Id != "admin" {
+	// 	u.CustomAbort(405, "permission is not allow!")
+	// 	return
+	// }
+	rid := u.GetString("roomid")
+	room, ok := models.RoomList[rid]
+	if !ok {
+		u.CustomAbort(500, "the room is not exist")
+		return
+	} else {
+		if !room.IsAdmin(mc.Id) && !room.IsAssistant(mc.Id) {
+			u.CustomAbort(405, "permission is not allow!")
+			return
+		}
+
+		if err := room.Discard(); err != nil {
+			u.CustomAbort(500, err.Error())
+			return
 		} else {
 			u.Data["json"] = "ok"
 		}

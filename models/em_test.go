@@ -3,6 +3,7 @@ package models
 import (
 	"fmt"
 	"testing"
+	"time"
 )
 
 type TmpClaims struct {
@@ -16,6 +17,14 @@ type TmpClaims struct {
 }
 
 func TestClient(t *testing.T) {
+	ins := &DBRecord{
+		Id:        2,
+		RoomId:    "test111",
+		CreatedAt: time.Now(),
+	}
+	fmt.Println(dBEngine.Delete(ins))
+	fmt.Println(ins.RoomId)
+	return
 	/*ch := make(chan int, 5)
 	GenerateScore(5, ch)
 	rs1 := []*result{}

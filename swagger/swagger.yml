@@ -51,12 +51,12 @@ paths:
           description: '{string} set success'
         "403":
           description: uid is null
-  /cattle/create:
+  /cattle/config:
     post:
       tags:
       - cattle
-      description: set rancher
-      operationId: CattleController.起庄
+      description: config redhat
+      operationId: CattleController.配置庄
       parameters:
       - in: query
         name: token
@@ -79,6 +79,46 @@ paths:
           description: '{string} success'
         "403":
           description: body is empty
+  /cattle/create:
+    post:
+      tags:
+      - cattle
+      description: set rancher
+      operationId: CattleController.起庄
+      parameters:
+      - in: query
+        name: token
+        description: The token for user
+        required: true
+        type: string
+      - in: query
+        name: roomid
+        description: The roomid for rancher
+        required: true
+        type: string
+      responses:
+        "200":
+          description: '{string} success'
+  /cattle/discard:
+    post:
+      tags:
+      - cattle
+      description: 弃庄
+      operationId: CattleController.弃庄
+      parameters:
+      - in: query
+        name: token
+        description: The token for user
+        required: true
+        type: string
+      - in: query
+        name: roomid
+        description: The roomid for rancher
+        required: true
+        type: string
+      responses:
+        "200":
+          description: '{string} success'
   /cattle/gain:
     get:
       tags:
@@ -383,6 +423,9 @@ definitions:
       Number:
         type: integer
         format: int64
+      RedAmount:
+        type: number
+        format: float
       Timeout:
         type: integer
         format: int64

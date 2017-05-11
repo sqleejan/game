@@ -38,7 +38,7 @@ func (o *AuthController) Token() {
 func (u *AuthController) Create() {
 	uid := u.GetString("uid")
 	nicname := u.GetString("nicname")
-	err := models.CreateDBUser(uid, nicname)
+	_, err := models.CreateDBUser(uid, nicname)
 	if err != nil {
 		u.CustomAbort(500, err.Error())
 		return

@@ -16,6 +16,15 @@ var (
 	RoomNamePrefix = "yoyo_"
 )
 
+const (
+	Stat_Kongxian = iota
+	Stat_Qizhuang
+	Stat_Qiangzhuang
+	Stat_Conifgzhuang
+	Stat_Sendredpaper
+	Stat_Getredpaper
+)
+
 type Room struct {
 	id     string
 	name   string
@@ -35,6 +44,7 @@ type Room struct {
 	hasScore     bool
 	echo         chan *result
 	results      map[string]*result
+	status       int
 }
 
 type result struct {
@@ -75,6 +85,7 @@ func MakeReport(rs []*result) *Marks {
 }
 
 type redhat struct {
+	amount  int
 	count   int
 	timeout time.Duration
 	end     bool
@@ -82,11 +93,12 @@ type redhat struct {
 }
 
 type RedReq struct {
-	Number  int
-	Timeout int
-	Diver   int
-	Master  string
-	Base    int
+	Number    int
+	Timeout   int
+	Diver     int
+	Master    string
+	Base      int
+	RedAmount float32
 }
 
 type RoomReq struct {
@@ -102,6 +114,7 @@ type RoomRespone struct {
 	RoomId    string
 	RoomName  string
 	Admin     string
+	Banker    string
 	StartTime time.Time
 	EndTime   time.Time
 	Active    bool
@@ -113,12 +126,20 @@ func (r *Room) Convert() *RoomRespone {
 	return &RoomRespone{
 		RoomId:    r.id,
 		RoomName:  r.name,
+		Admin:     r.admin,
+		Banker:    r.redhatMaster,
 		StartTime: r.startTime,
 		EndTime:   r.endTime,
 		Active:    r.active,
 		LenUser:   len(r.users),
 		Users:     r.users,
 	}
+}
+
+func (r *Room) SetStatus(stat int) {
+	r.locker.Lock()
+	r.status = stat
+	r.locker.Unlock()
 }
 
 func CreateRoom(req *RoomReq) (*Room, error) {
@@ -261,19 +282,101 @@ func (r *Room) Assistant(uid string) error {
 	return fmt.Errorf("room is disable")
 }
 
-func (r *Room) SendRedhat(rr *RedReq) error {
+func (r *Room) SendRedhat() error {
+	if !r.Active() {
+		return fmt.Errorf("the room is disable")
+	}
+	if r.status != Stat_Kongxian {
+		return fmt.Errorf("the room stat is %d!", r.status)
+	}
+	r.SetStatus(Stat_Qizhuang)
+	return nil
+	/*
+		if r.HaveRedhat() {
+			return fmt.Errorf("have redhat!")
+		}
+		if rr.Number > 10 {
+			return fmt.Errorf("number overflow")
+		}
+		if rr.Diver < 2 {
+			return fmt.Errorf("Diver < 2")
+		}
+
+		// if rr.Number == 1 {
+		// 	r.redhats <- &redhat{
+		// 		count:   rr.Diver,
+		// 		timeout: time.Duration(rr.Timeout) * time.Minute,
+		// 		end:     true,
+		// 	}
+		// 	r.locker.Lock()
+		// 	r.hasRedhat = true
+		// 	r.locker.Unlock()
+		// 	return nil
+		// }
+		for i := 0; i < rr.Number-1; i++ {
+			r.redhats <- &redhat{
+				count:   rr.Diver,
+				timeout: time.Duration(rr.Timeout) * time.Minute,
+				base:    rr.Base,
+			}
+		}
+
+		r.redhats <- &redhat{
+			count:   rr.Diver,
+			timeout: time.Duration(rr.Timeout) * time.Minute,
+			base:    rr.Base,
+			end:     true,
+		}
+		r.locker.Lock()
+		r.hasRedhat = true
+		r.locker.Unlock()
+		return nil
+	*/
+
+}
+
+func (r *Room) MasterRedhat(master string) error {
+	if !r.Active() {
+		return fmt.Errorf("the room is disable")
+	}
+	// if !r.HaveRedhat() {
+	// 	return fmt.Errorf("have not redhat!")
+	// }
+	if r.status != Stat_Qizhuang {
+		return fmt.Errorf("the room stat is %d!", r.status)
+	}
+	r.locker.Lock()
+	defer r.locker.Unlock()
+	if r.redhatMaster != "" {
+		return fmt.Errorf("master is someone else!")
+	}
+	r.redhatMaster = master
+	r.SetStatus(Stat_Qiangzhuang)
+	return nil
+}
+
+func (r *Room) ConfigRedhat(master string, rr *RedReq) error {
 	if !r.Active() {
 		return fmt.Errorf("the room is disable")
 	}
 
-	if r.HaveRedhat() {
-		return fmt.Errorf("have redhat!")
+	// if !r.HaveRedhat() {
+	// 	return fmt.Errorf("have not redhat!")
+	// }
+	if r.status != Stat_Qiangzhuang {
+		return fmt.Errorf("the room stat is %d!", r.status)
 	}
-	if rr.Number > 10 {
+	if r.redhatMaster != master {
+		return fmt.Errorf("master is %s!", r.redhatMaster)
+	}
+	if rr.Number > 10 || rr.Number < 2 {
 		return fmt.Errorf("number overflow")
 	}
 	if rr.Diver < 2 {
 		return fmt.Errorf("Diver < 2")
+	}
+	if rr.RedAmount < 1 || rr.RedAmount > 9.99 {
+		return fmt.Errorf("RedAmount overflow")
 	}
 
 	// if rr.Number == 1 {
@@ -287,8 +390,10 @@ func (r *Room) SendRedhat(rr *RedReq) error {
 	// 	r.locker.Unlock()
 	// 	return nil
 	// }
+	r.redhats = make(chan *redhat, rr.Number)
 	for i := 0; i < rr.Number-1; i++ {
 		r.redhats <- &redhat{
+			amount:  int(rr.RedAmount * 100),
 			count:   rr.Diver,
 			timeout: time.Duration(rr.Timeout) * time.Minute,
 			base:    rr.Base,
@@ -296,31 +401,26 @@ func (r *Room) SendRedhat(rr *RedReq) error {
 	}
 
 	r.redhats <- &redhat{
+		amount:  int(rr.RedAmount * 100),
 		count:   rr.Diver,
 		timeout: time.Duration(rr.Timeout) * time.Minute,
 		base:    rr.Base,
 		end:     true,
 	}
-	r.locker.Lock()
-	r.hasRedhat = true
-	r.locker.Unlock()
+	// r.locker.Lock()
+	// r.hasRedhat = true
+	// r.locker.Unlock()
+	r.SetStatus(Stat_Conifgzhuang)
 	return nil
 
 }
 
-func (r *Room) MasterRedhat(master string) error {
-	if !r.Active() {
-		return fmt.Errorf("the room is disable")
+func (r *Room) Discard() error {
+	if !(r.status > Stat_Kongxian) {
+		return fmt.Errorf("the room stat is idle!")
 	}
-	if !r.HaveRedhat() {
-		return fmt.Errorf("have not redhat!")
-	}
-	r.locker.Lock()
-	if r.redhatMaster != "" {
-		return fmt.Errorf("master is someone else!")
-	}
-	r.redhatMaster = master
-	r.locker.Unlock()
+	r.scoreClear()
+	r.redhatClear()
 	return nil
 }
 
@@ -330,8 +430,11 @@ func (r *Room) Diver(master string) (*Marks, error) {
 		return nil, fmt.Errorf("the room is disable")
 	}
 
-	if !r.HaveRedhat() {
-		return nil, fmt.Errorf("have not redhat!")
+	// if !r.HaveRedhat() {
+	// 	return nil, fmt.Errorf("have not redhat!")
+	// }
+	if r.status != Stat_Conifgzhuang {
+		return nil, fmt.Errorf("the room stat is %d!", r.status)
 	}
 
 	if r.redhatMaster != master {
@@ -438,6 +541,7 @@ func (r *Room) redhatClear() {
 	defer r.locker.Unlock()
 	r.redhatMaster = ""
 	r.hasRedhat = false
+	r.status = Stat_Kongxian
 }
 
 func (r *Room) scoreClear() {

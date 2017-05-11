@@ -48,14 +48,22 @@ func (u *DBUser) Fetch(db gorp.SqlExecutor) error {
 
 }
 
-func CreateDBUser(openid, nicname string) error {
+func CreateDBUser(openid, nicname string) (string, error) {
 	u := &DBUser{
 		Id: openid,
 	}
+
+	if err := u.Fetch(dBEngine); err == nil {
+		if u.NickName == "" {
+			return nicname, nil
+		}
+		return u.NickName, nil
+	}
+
 	pas := string(Krand(8, KC_RAND_KIND_LOWER))
 	err := cemsdk.CreateAccount(openid, pas, nicname)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer func() {
 		if err != nil {
@@ -63,18 +71,18 @@ func CreateDBUser(openid, nicname string) error {
 		}
 	}()
 	u.Password = pas
-	u.NickName = nicname
+	u.NickName = ""
 	var trans *gorp.Transaction
 	trans, err = dBEngine.Begin()
 	defer CheckAndCommit(trans, err)
 	err = u.Insert(trans)
 	if err != nil {
-		return err
+		return "", err
 	}
 	// token := ""
 	// token, err = cemsdk.GetUserToken(u.Id, u.Password)
 	// return token, err
-	return nil
+	return nicname, nil
 }
 
 func GetToken(openid string) (string, error) {
@@ -201,10 +209,10 @@ var dBEngine *gorp.DbMap
 func DBEngineInit() *gorp.DbMap {
 	connectionString := fmt.Sprintf(
 		"%s@tcp(%s:%s)/%s?charset=utf8&parseTime=true&loc=Asia%%2FShanghai&interpolateParams=true",
-		"root:123456",
+		"root:11223344Asdf", //root:11223344Asdf
 		"127.0.0.1",
 		"3306",
-		"test",
+		"game", //game
 	)
 	//connectionString := ""
 	db, err := sql.Open("mysql", connectionString)
