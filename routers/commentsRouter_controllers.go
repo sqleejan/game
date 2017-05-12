@@ -52,7 +52,7 @@ func init() {
 		beego.ControllerComments{
 			Method: "Distribute",
 			Router: `/send`,
-			AllowHTTPMethods: []string{"get"},
+			AllowHTTPMethods: []string{"post"},
 			Params: nil})
 
 	beego.GlobalControllerRouter["game/controllers:CattleController"] = append(beego.GlobalControllerRouter["game/controllers:CattleController"],
@@ -136,6 +136,13 @@ func init() {
 		beego.ControllerComments{
 			Method: "Join",
 			Router: `/join`,
+			AllowHTTPMethods: []string{"post"},
+			Params: nil})
+
+	beego.GlobalControllerRouter["game/controllers:UserController"] = append(beego.GlobalControllerRouter["game/controllers:UserController"],
+		beego.ControllerComments{
+			Method: "Active",
+			Router: `/active`,
 			AllowHTTPMethods: []string{"post"},
 			Params: nil})
 

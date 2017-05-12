@@ -34,11 +34,18 @@ type Player struct {
 	Role    int
 	Score   int
 	NicName string
+	Active  bool
 }
 
 type UserReq struct {
 	UserId   string
 	Username string
+}
+
+type UserActiveReq struct {
+	Score   int
+	Nicname string
+	Active  bool
 }
 
 type TmpRespone struct {
@@ -70,6 +77,31 @@ func (u *User) AppendRoom(room *Room, role int) {
 		}
 	}
 	u.locker.Unlock()
+}
+
+func FetchUserInfo(uid string) (string,map[string]int, error) {
+	res := map[string]int{}
+	
+	u,err:=cemsdk.GetUser(uid)
+	if err!=nil{
+		return "",res,err
+	}
+
+	js, err := cemsdk.FetchGroupFromUserJoined(uid)
+	if err != nil {
+		return "",res, err
+	}
+	for _, v := range js.Data {
+		room, ok := RoomList[v.Groupid]
+		if ok {
+			u, ok := room.users[uid]
+			if ok {
+				res[v.Groupid] = u.Role
+			}
+
+		}
+	}
+	return u.Nicname,res, nil
 }
 
 //func AddUser(u User) string {

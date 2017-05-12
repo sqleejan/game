@@ -153,11 +153,15 @@ func (c *Client) DelBatchUserFromGroup(groupid, members string) error {
 }
 
 // 获取一个用户参与的所有群组
-func (c *Client) FetchGroupFromUserJoined(username string) (string, error) {
+func (c *Client) FetchGroupFromUserJoined(username string) (*JoinedGroups, error) {
 	url := "users/" + username + "/joined_chatgroups"
 	result, err := c.sendRequest(url, strings.NewReader(""), "GET")
-
-	return result, err
+	js := &JoinedGroups{}
+	err = json.Unmarshal([]byte(result), js)
+	if err != nil {
+		return nil, err
+	}
+	return js, nil
 }
 
 // 修改群组 Owner 为同一 APP 下的其他用户
@@ -251,4 +255,16 @@ type GroupList struct {
 	Organization    string        `json:"organization"`
 	ApplicationName string        `json:"applicationName"`
 	Count           int           `json:"count"`
+}
+
+type JoinedGroups struct {
+	Action   string        `json:"action"`
+	URI      string        `json:"uri"`
+	Entities []interface{} `json:"entities"`
+	Data     []struct {
+		Groupid   string `json:"groupid"`
+		Groupname string `json:"groupname"`
+	} `json:"data"`
+	Timestamp int64 `json:"timestamp"`
+	Duration  int   `json:"duration"`
 }

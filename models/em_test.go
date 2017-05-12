@@ -17,13 +17,21 @@ type TmpClaims struct {
 }
 
 func TestClient(t *testing.T) {
-	ins := &DBRecord{
-		Id:        2,
-		RoomId:    "test111",
+
+	u, _ := cemsdk.GetUser("wanj1")
+	fmt.Println(u.Username)
+	return
+	ins := DBRecord{
+		Id:        1,
+		RoomId:    "15288377606145",
 		CreatedAt: time.Now(),
 	}
-	fmt.Println(dBEngine.Delete(ins))
-	fmt.Println(ins.RoomId)
+	if v, err := dBEngine.Get(ins, ins.Id); err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Println(v.(*DBRecord).Id)
+	}
+	//fmt.Println(ins.RoomId)
 	return
 	/*ch := make(chan int, 5)
 	GenerateScore(5, ch)

@@ -57,15 +57,15 @@ func (u *RoomController) Post() {
 // @router /list [get]
 func (u *RoomController) GetAll() {
 	token := u.GetString("token")
-	mc, err := auth.Parse(token)
+	_, err := auth.Parse(token)
 	if err != nil {
 		u.CustomAbort(405, err.Error())
 		return
 	}
-	if mc.Id != "admin" {
-		u.CustomAbort(405, "permission is not allow!")
-		return
-	}
+	// if mc.Id != "admin" {
+	// 	u.CustomAbort(405, "permission is not allow!")
+	// 	return
+	// }
 	rooms := []interface{}{}
 	for _, r := range models.RoomList {
 		rooms = append(rooms, r.Convert())

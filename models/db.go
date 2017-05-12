@@ -55,6 +55,9 @@ func CreateDBUser(openid, nicname string) (string, error) {
 
 	if err := u.Fetch(dBEngine); err == nil {
 		if u.NickName == "" {
+			if err := cemsdk.ChangeNickname(openid, nicname); err != nil {
+				return "", err
+			}
 			return nicname, nil
 		}
 		return u.NickName, nil

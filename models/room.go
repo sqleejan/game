@@ -45,6 +45,7 @@ type Room struct {
 	echo         chan *result
 	results      map[string]*result
 	status       int
+	gainlimit    int
 }
 
 type result struct {
@@ -99,15 +100,22 @@ type RedReq struct {
 	Master    string
 	Base      int
 	RedAmount float32
+	//	ScoreLimt int
+}
+
+type DiverReq struct {
+	Diver     int
+	RedAmount float32
 }
 
 type RoomReq struct {
 	//AssistantNum int
-	Duration  int
-	UserId    string
-	UserLimit int
-	RoomName  string
-	Water     int
+	Duration   int
+	UserId     string
+	UserLimit  int
+	RoomName   string
+	Water      int
+	ScoreLimit int
 }
 
 type RoomRespone struct {
@@ -119,10 +127,15 @@ type RoomRespone struct {
 	EndTime   time.Time
 	Active    bool
 	LenUser   int
+	ScoreSum  int
 	Users     map[string]*Player
 }
 
 func (r *Room) Convert() *RoomRespone {
+	sumScore:=0
+	for _,u:=range r.users{
+		sumScore+=u.Score
+	}
 	return &RoomRespone{
 		RoomId:    r.id,
 		RoomName:  r.name,
@@ -132,6 +145,7 @@ func (r *Room) Convert() *RoomRespone {
 		EndTime:   r.endTime,
 		Active:    r.active,
 		LenUser:   len(r.users),
+		ScoreSum: sumScore,
 		Users:     r.users,
 	}
 }
@@ -167,10 +181,13 @@ func CreateRoom(req *RoomReq) (*Room, error) {
 		results:   make(map[string]*result),
 		water:     req.Water,
 		name:      req.RoomName,
+		gainlimit: req.ScoreLimit,
 	}
+
 	adminPlayer := &Player{
-		Role:  Role_Admin,
-		Score: 0,
+		Role:   Role_Admin,
+		Active: true,
+		Score:  0,
 	}
 	room.users[req.UserId] = adminPlayer
 	roomLock.Lock()
@@ -203,12 +220,20 @@ func (r *Room) IsAdmin(uid string) bool {
 	return r.admin == uid
 }
 
+func (r *Room) Role(uid string) int {
+	u, ok := r.users[uid]
+	if !ok {
+		return -1
+	}
+	return u.Role
+}
+
 func (r *Room) IsCustom(uid string) bool {
 	u, ok := r.users[uid]
 	if !ok {
 		return false
 	}
-	return u.Role == Role_Custom
+	return u.Role == Role_Custom && u.Active
 }
 
 func (r *Room) IsAssistant(uid string) bool {
@@ -216,12 +241,12 @@ func (r *Room) IsAssistant(uid string) bool {
 	if !ok {
 		return false
 	}
-	return u.Role == Role_Assistant
+	return u.Role == Role_Assistant && u.Active
 }
 
 func (r *Room) IsAnyone(uid string) bool {
-	_, ok := r.users[uid]
-	return ok
+	u, ok := r.users[uid]
+	return ok && u.Active
 }
 
 func (r *Room) AppendUser(openid string, nicname string) (string, error) {
@@ -241,10 +266,10 @@ func (r *Room) AppendUser(openid string, nicname string) (string, error) {
 		// 		return "", err
 		// 	}
 		// }
-		err = cemsdk.AddUserToGroup(r.id, openid)
-		if err != nil && !strings.Contains(err.Error(), "already in group") {
-			return token, err
-		}
+		// err = cemsdk.AddUserToGroup(r.id, openid)
+		// if err != nil && !strings.Contains(err.Error(), "already in group") {
+		// 	return token, err
+		// }
 		r.users[openid] = &Player{
 			Role:    Role_Custom,
 			NicName: nicname,
@@ -264,7 +289,63 @@ func (r *Room) AppendUser(openid string, nicname string) (string, error) {
 	return "", fmt.Errorf("room is disable")
 }
 
-func (r *Room) Assistant(uid string) error {
+func (r *Room) ActiveUser(openid string, req *UserActiveReq) error {
+
+	if r.Active() {
+		player, ok := r.users[openid]
+		if !ok {
+			return fmt.Errorf("you must join room at first!")
+		}
+		if req.Active {
+			if player.Active != req.Active {
+				err := cemsdk.AddUserToGroup(r.id, openid)
+				if err != nil && !strings.Contains(err.Error(), "already in group") {
+					return err
+				}
+			}
+			player.Active = true
+			player.Score = req.Score
+			if player.NicName != req.Nicname {
+				err := cemsdk.ChangeNickname(openid, req.Nicname)
+				if err != nil {
+					return err
+				}
+				u:=&DBUser{}
+				u.Id=openid
+				err=u.Fetch(dBEngine)
+				if err != nil {
+					return err
+				}
+				u.NickName=req.Nicname
+				err=u.Update(dBEngine)
+				if err != nil {
+					return err
+				}
+			}
+			player.NicName = req.Nicname
+
+		} else {
+			if player.Active != req.Active {
+				err := cemsdk.DelUserFromGroup(r.id, openid)
+				if err != nil {
+					return nil
+				}
+			}
+			player.Active = false
+
+		}
+		return nil
+
+	}
+
+	return fmt.Errorf("room is disable")
+
+}
+
+func (r *Room) Assistant(uid string,role int) error {
+	if role>1{
+		return fmt.Errorf("cant Understand the role %d", role)
+	}
 	if r.Active() {
 		// user, ok := r.users[uid]
 		// if !ok {
@@ -276,7 +357,7 @@ func (r *Room) Assistant(uid string) error {
 		if !ok {
 			return fmt.Errorf("%s is not in Room: %s", uid, r.id)
 		}
-		r.users[uid].Role = Role_Assistant
+		r.users[uid].Role = role
 		return nil
 	}
 	return fmt.Errorf("room is disable")
@@ -351,7 +432,16 @@ func (r *Room) MasterRedhat(master string) error {
 		return fmt.Errorf("master is someone else!")
 	}
 	r.redhatMaster = master
-	r.SetStatus(Stat_Qiangzhuang)
+	r.status = Stat_Qiangzhuang
+	var nicname string
+	u, _ := cemsdk.GetUser(master)
+	if u != nil {
+		nicname = u.Nicname
+	}
+	cemsdk.SendMessage("admin", "chatgroups", []string{r.id}, map[string]string{
+		"type": "txt",
+		"msg":  fmt.Sprintf("%s[%s] 抢到庄家", nicname, master),
+	}, map[string]string{})
 	return nil
 }
 
@@ -372,24 +462,21 @@ func (r *Room) ConfigRedhat(master string, rr *RedReq) error {
 	if rr.Number > 10 || rr.Number < 2 {
 		return fmt.Errorf("number overflow")
 	}
-	if rr.Diver < 2 {
-		return fmt.Errorf("Diver < 2")
-	}
-	if rr.RedAmount < 1 || rr.RedAmount > 9.99 {
-		return fmt.Errorf("RedAmount overflow")
-	}
+	//r.gainlimit = rr.ScoreLimt
 
-	// if rr.Number == 1 {
-	// 	r.redhats <- &redhat{
-	// 		count:   rr.Diver,
-	// 		timeout: time.Duration(rr.Timeout) * time.Minute,
-	// 		end:     true,
-	// 	}
-	// 	r.locker.Lock()
-	// 	r.hasRedhat = true
-	// 	r.locker.Unlock()
-	// 	return nil
-	// }
+	if rr.Number == 1 {
+		r.redhats <- &redhat{
+			amount:  int(rr.RedAmount * 100),
+			count:   rr.Diver,
+			timeout: time.Duration(rr.Timeout) * time.Minute,
+			base:    rr.Base,
+			end:     true,
+		}
+		r.locker.Lock()
+		r.hasRedhat = true
+		r.locker.Unlock()
+		return nil
+	}
 	r.redhats = make(chan *redhat, rr.Number)
 	for i := 0; i < rr.Number-1; i++ {
 		r.redhats <- &redhat{
@@ -424,7 +511,7 @@ func (r *Room) Discard() error {
 	return nil
 }
 
-func (r *Room) Diver(master string) (*Marks, error) {
+func (r *Room) Diver(master string, req *DiverReq) (*Marks, error) {
 
 	if !r.Active() {
 		return nil, fmt.Errorf("the room is disable")
@@ -444,12 +531,23 @@ func (r *Room) Diver(master string) (*Marks, error) {
 	if r.HaveScore() {
 		return nil, fmt.Errorf("releave score!")
 	}
+
+	if req.Diver < 2 {
+		return nil, fmt.Errorf("Diver < 2")
+	}
+
+	if req.RedAmount < 1 || req.RedAmount > 9.99 {
+		return nil, fmt.Errorf("RedAmount overflow")
+	}
+
 	rd := <-r.redhats
+	rd.amount = int(req.RedAmount * 100)
+	rd.count = req.Diver
 	r.score = make(chan int, rd.count+1)
 	close(r.echo)
 	r.echo = make(chan *result)
 
-	GenerateScore(rd.count, r.score)
+	GenerateScore(rd.amount, rd.count, r.score)
 	masterscore := <-r.score
 	response := []*result{&result{
 		custom: master,
@@ -475,7 +573,7 @@ func (r *Room) Diver(master string) (*Marks, error) {
 					rs.score = -rs.score
 					response = append(response, rs)
 					r.scoreClear()
-					juge(response, rd.base, r.water)
+					r.juge(response, rd.base, r.water)
 					reports := MakeReport(response)
 					Record(r.id, r.name, r.admin, reports)
 					if rd.end {
@@ -515,6 +613,9 @@ func (r *Room) GetScore(custom string) (int, error) {
 		return 0, fmt.Errorf("you are master of the work")
 	}
 	r.results[custom] = nil
+	if r.users[custom].Score < r.gainlimit {
+		return 0, fmt.Errorf("your score is below the limit")
+	}
 	score := <-r.score
 
 	if score < 0 {
@@ -541,6 +642,7 @@ func (r *Room) redhatClear() {
 	defer r.locker.Unlock()
 	r.redhatMaster = ""
 	r.hasRedhat = false
+	//	r.gainlimit = -3000
 	r.status = Stat_Kongxian
 }
 
@@ -587,8 +689,7 @@ func Krand(size int, kind int) []byte {
 	return result
 }
 
-func GenerateScore(count int, score chan int) {
-	sum := 1000
+func GenerateScore(sum int, count int, score chan int) {
 	s1 := rand.New(rand.NewSource(time.Now().Unix() + rand.Int63n(100)))
 	//s2 := rand.New(rand.NewSource(time.Now().Unix() - 100))
 	suarray := make([]int, count)
@@ -619,7 +720,7 @@ func GenerateScore(count int, score chan int) {
 
 }
 
-func juge(rs []*result, base int, water int) {
+func (r *Room) juge(rs []*result, base int, water int) {
 	length := len(rs)
 	if length < 2 {
 		return
@@ -629,9 +730,11 @@ func juge(rs []*result, base int, water int) {
 	master := niu(begin.score)
 	sum := 0
 	for i := range rs {
+
 		if i == 0 {
 			continue
 		}
+
 		if rs[i].score < 0 {
 			rs[i].score = -rs[i].score
 		}
@@ -645,9 +748,11 @@ func juge(rs []*result, base int, water int) {
 			rs[i].bay = ba * base
 			sum -= ba * base
 		}
+		r.users[rs[i].custom].Score += rs[i].bay
 		//rs[i].score = float32(rs[i].score) / 100
 	}
 	begin.bay = sum - water*len(rs)
+	r.users[begin.custom].Score += begin.bay
 	//last.score = float32(last.score) / 100
 }
 

@@ -245,7 +245,7 @@
             }
         },
         "/cattle/send": {
-            "get": {
+            "post": {
                 "tags": [
                     "cattle"
                 ],
@@ -265,6 +265,15 @@
                         "description": "The roomid for cattle",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "description": "body for DiverReq",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.DiverReq"
+                        }
                     }
                 ],
                 "responses": {
@@ -458,6 +467,55 @@
                 }
             }
         },
+        "/user/active": {
+            "post": {
+                "tags": [
+                    "user"
+                ],
+                "description": "Active User",
+                "operationId": "UserController.Active User",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "token",
+                        "description": "The token for user",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "roomid",
+                        "description": "The roomid for user",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "uid",
+                        "description": "The uid for user",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "description": "body for DiverReq",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.UserActiveReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{string} token"
+                    },
+                    "403": {
+                        "description": "body is empty"
+                    }
+                }
+            }
+        },
         "/user/assistant": {
             "post": {
                 "tags": [
@@ -486,6 +544,14 @@
                         "description": "The uid for user",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "role",
+                        "description": "The role for user",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int64"
                     }
                 ],
                 "responses": {
@@ -597,6 +663,20 @@
             "title": "MyCustomClaims",
             "type": "object"
         },
+        "models.DiverReq": {
+            "title": "DiverReq",
+            "type": "object",
+            "properties": {
+                "Diver": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "RedAmount": {
+                    "type": "number",
+                    "format": "float"
+                }
+            }
+        },
         "models.Object": {
             "title": "Object",
             "type": "object",
@@ -652,6 +732,10 @@
                 },
                 "RoomName": {
                     "type": "string"
+                },
+                "ScoreLimit": {
+                    "type": "integer",
+                    "format": "int64"
                 },
                 "UserId": {
                     "type": "string"
@@ -723,6 +807,22 @@
                 "StartTime": {
                     "type": "string",
                     "format": "string"
+                }
+            }
+        },
+        "models.UserActiveReq": {
+            "title": "UserActiveReq",
+            "type": "object",
+            "properties": {
+                "Active": {
+                    "type": "boolean"
+                },
+                "Nicname": {
+                    "type": "string"
+                },
+                "Score": {
+                    "type": "integer",
+                    "format": "int64"
                 }
             }
         }

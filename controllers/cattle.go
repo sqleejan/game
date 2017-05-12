@@ -183,9 +183,10 @@ func (u *CattleController) Discard() {
 // @Description Distribute cattle
 // @Param	token		query 	string	true		"The token for user"
 // @Param	roomid		query 	string	true		"The roomid for cattle"
+// @Param	body		body 	models.DiverReq	true		"body for DiverReq"
 // @Success 200 {body} models.Marks
 // @Failure 403 query is empty
-// @router /send [get]
+// @router /send [post]
 func (u *CattleController) Distribute() {
 	token := u.GetString("token")
 	mc, err := auth.Parse(token)
@@ -199,15 +200,24 @@ func (u *CattleController) Distribute() {
 		u.CustomAbort(500, "the room is not exist")
 		return
 	} else {
-		rs, err := room.Diver(mc.Id)
+
+		var req models.DiverReq
+		err := json.Unmarshal(u.Ctx.Input.RequestBody, &req)
 		if err != nil {
 			u.CustomAbort(500, err.Error())
 			return
 		} else {
+			rs, err := room.Diver(mc.Id, &req)
+			if err != nil {
+				u.CustomAbort(500, err.Error())
+				return
+			} else {
 
-			u.Data["json"] = rs
+				u.Data["json"] = rs
 
+			}
 		}
+
 	}
 
 	u.ServeJSON()

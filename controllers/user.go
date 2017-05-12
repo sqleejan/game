@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"encoding/json"
 	"game/auth"
 	"game/models"
 
@@ -45,16 +46,67 @@ func (u *UserController) Join() {
 	u.ServeJSON()
 }
 
+// @Title Active User
+// @Description Active User
+// @Param	token		query 	string	true		"The token for user"
+// @Param	roomid		query 	string	true		"The roomid for user"
+// @Param	uid		query 	string	true		"The uid for user"
+// @Param	body		body 	models.UserActiveReq	true		"body for DiverReq"
+// @Success 200 {string} token
+// @Failure 403 body is empty
+// @router /active [post]
+func (u *UserController) Active() {
+	token := u.GetString("token")
+	mc, err := auth.Parse(token)
+	if err != nil {
+		u.CustomAbort(405, err.Error())
+		return
+	}
+	rid := u.GetString("roomid")
+	room, ok := models.RoomList[rid]
+	if !ok {
+		u.CustomAbort(500, "the room is not exist")
+		return
+	} else {
+
+		var req models.UserActiveReq
+		err := json.Unmarshal(u.Ctx.Input.RequestBody, &req)
+		if err != nil {
+			u.CustomAbort(500, err.Error())
+			return
+		} else {
+			err = room.ActiveUser(mc.Id, &req)
+			if err != nil {
+				u.CustomAbort(500, err.Error())
+				return
+			} else {
+
+				u.Data["json"] = "ok"
+
+			}
+		}
+
+	}
+
+	u.ServeJSON()
+}
+
 // @Title Set Assistant
 // @Description Set Assistant
 // @Param	token		query 	string	true		"The token for user"
 // @Param	roomid		query 	string	true		"The roomid for user"
 // @Param	uid		query 	string	true		"The uid for user"
+// @Param	role	query 	int	true		"The role for user"
 // @Success 200 {string} set success
 // @Failure 403 body is empty
 // @router /assistant [post]
 func (u *UserController) Assistant() {
 	token := u.GetString("token")
+	role, err := u.GetInt("role")
+	if err != nil {
+		u.CustomAbort(405, err.Error())
+		return
+	}
 	mc, err := auth.Parse(token)
 	if err != nil {
 		u.CustomAbort(405, err.Error())
@@ -71,7 +123,7 @@ func (u *UserController) Assistant() {
 			return
 		}
 
-		if err := room.Assistant(u.GetString("uid")); err != nil {
+		if err := room.Assistant(u.GetString("uid"), role); err != nil {
 			u.CustomAbort(500, err.Error())
 			return
 		} else {
@@ -114,6 +166,19 @@ func (u *UserController) GetSelf() {
 		u.CustomAbort(405, err.Error())
 		return
 	}
-	u.Data["json"] = mc
+	nicname, js, err := models.FetchUserInfo(mc.Id)
+	if err != nil {
+		u.CustomAbort(405, err.Error())
+		return
+	}
+	mc.Audience = nicname
+	res := struct {
+		*auth.MyCustomClaims
+		Roles map[string]int `json:roles`
+	}{
+		MyCustomClaims: mc,
+		Roles:          js,
+	}
+	u.Data["json"] = res
 	u.ServeJSON()
 }

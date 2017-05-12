@@ -2,6 +2,7 @@ package emsdk
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 )
 
@@ -19,6 +20,21 @@ func (c *Client) DeleteAccount(username string) error {
 	_, err := c.sendRequest(url, strings.NewReader(""), "DELETE")
 
 	return err
+}
+
+// 从环信服务器中删除用户
+func (c *Client) GetUser(username string) (*User, error) {
+	url := "users/" + username
+	res, err := c.sendRequest(url, strings.NewReader(""), "GET")
+	list := &UserList{}
+	err = json.Unmarshal([]byte(res), list)
+	if err != nil {
+		return nil, err
+	}
+	if len(list.Entities) > 0 {
+		return &list.Entities[0], nil
+	}
+	return nil, fmt.Errorf("have no user")
 }
 
 // 修改用户密码
@@ -100,6 +116,7 @@ type User struct {
 	Created   int64  `json:"created"`
 	Modified  int64  `json:"modified"`
 	Username  string `json:"username"`
+	Nicname   string `json:"nicname"`
 	Activated bool   `json:"activated"`
 }
 
