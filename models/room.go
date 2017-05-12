@@ -31,6 +31,7 @@ type Room struct {
 	active bool
 	users  map[string]*Player
 	water  int
+	base   int
 	// assistantSum int
 	// assistantNum int
 	admin        string
@@ -45,7 +46,8 @@ type Room struct {
 	echo         chan *result
 	results      map[string]*result
 	status       int
-	gainlimit    int
+	//	gainlimit    int
+	Scope
 }
 
 type result struct {
@@ -94,12 +96,11 @@ type redhat struct {
 }
 
 type RedReq struct {
-	Number    int
-	Timeout   int
-	Diver     int
-	Master    string
-	Base      int
-	RedAmount float32
+	Number int
+	//Timeout   int
+	//Diver     int
+	//Master    string
+	//RedAmount float32
 	//	ScoreLimt int
 }
 
@@ -110,17 +111,20 @@ type DiverReq struct {
 
 type RoomReq struct {
 	//AssistantNum int
-	Duration   int
-	UserId     string
-	UserLimit  int
-	RoomName   string
-	Water      int
-	ScoreLimit int
+	Duration  int
+	UserId    string
+	UserLimit int
+	RoomName  string
+	Water     int
+	Base      int
+	Scope
 }
 
 type RoomRespone struct {
 	RoomId    string
 	RoomName  string
+	Base      int
+	Water     int
 	Admin     string
 	Banker    string
 	StartTime time.Time
@@ -129,24 +133,37 @@ type RoomRespone struct {
 	LenUser   int
 	ScoreSum  int
 	Users     map[string]*Player
+	Scope
 }
 
 func (r *Room) Convert() *RoomRespone {
-	sumScore:=0
-	for _,u:=range r.users{
-		sumScore+=u.Score
+	sumScore := 0
+	for _, u := range r.users {
+		sumScore += u.Score
 	}
 	return &RoomRespone{
 		RoomId:    r.id,
 		RoomName:  r.name,
+		Base:      r.base,
+		Water:     r.water,
 		Admin:     r.admin,
 		Banker:    r.redhatMaster,
 		StartTime: r.startTime,
 		EndTime:   r.endTime,
 		Active:    r.active,
 		LenUser:   len(r.users),
-		ScoreSum: sumScore,
+		ScoreSum:  sumScore,
 		Users:     r.users,
+		Scope: Scope{
+			CountUp:      r.CountUp,
+			CountDown:    r.CountDown,
+			RedDown:      r.RedDown,
+			RedUp:        r.RedUp,
+			RedCountDown: r.RedCountDown,
+			RedCountUp:   r.RedCountUp,
+			Timeout:      r.Timeout,
+			ScoreLimit:   r.ScoreLimit,
+		},
 	}
 }
 
@@ -170,6 +187,7 @@ func CreateRoom(req *RoomReq) (*Room, error) {
 	room := &Room{
 		id:     gid,
 		active: true,
+		base:   req.Base,
 		users:  make(map[string]*Player),
 		admin:  req.UserId,
 		// assistantSum: req.AssistantNum,
@@ -181,7 +199,16 @@ func CreateRoom(req *RoomReq) (*Room, error) {
 		results:   make(map[string]*result),
 		water:     req.Water,
 		name:      req.RoomName,
-		gainlimit: req.ScoreLimit,
+		Scope: Scope{
+			CountDown:    req.CountDown,
+			CountUp:      req.CountUp,
+			RedCountDown: req.RedCountDown,
+			RedCountUp:   req.RedCountUp,
+			RedDown:      req.RedDown,
+			RedUp:        req.RedUp,
+			ScoreLimit:   req.ScoreLimit,
+			Timeout:      req.Timeout,
+		},
 	}
 
 	adminPlayer := &Player{
@@ -194,6 +221,42 @@ func CreateRoom(req *RoomReq) (*Room, error) {
 	RoomList[gid] = room
 	roomLock.Unlock()
 	return room, nil
+}
+
+type RoomConfig struct {
+	Base  int
+	Water int
+	Scope
+}
+
+type Scope struct {
+	CountUp      int
+	CountDown    int
+	RedDown      float32
+	RedUp        float32
+	RedCountDown int
+	RedCountUp   int
+	Timeout      int
+	ScoreLimit   int
+}
+
+func (r *Room) Config(req *RoomConfig) error {
+	if r.status != Stat_Kongxian {
+		return fmt.Errorf("you cant config room now!")
+	}
+	r.locker.Lock()
+	defer r.locker.Unlock()
+	r.base = req.Base
+	r.water = req.Water
+	r.CountDown = req.CountDown
+	r.CountUp = req.CountUp
+	r.RedCountDown = req.RedCountDown
+	r.RedCountUp = req.RedCountUp
+	r.RedDown = req.RedDown
+	r.RedUp = req.RedUp
+	r.Timeout = req.Timeout
+	r.ScoreLimit = req.ScoreLimit
+	return nil
 }
 
 func (r *Room) Active() bool {
@@ -310,19 +373,33 @@ func (r *Room) ActiveUser(openid string, req *UserActiveReq) error {
 				if err != nil {
 					return err
 				}
-				u:=&DBUser{}
-				u.Id=openid
-				err=u.Fetch(dBEngine)
+				u := &DBUser{}
+				u.Id = openid
+				err = u.Fetch(dBEngine)
 				if err != nil {
 					return err
 				}
-				u.NickName=req.Nicname
-				err=u.Update(dBEngine)
+				u.NickName = req.Nicname
+				err = u.Update(dBEngine)
 				if err != nil {
 					return err
 				}
 			}
 			player.NicName = req.Nicname
+			count := 0
+			for _, v := range r.users {
+				if v.Active {
+					count++
+				}
+			}
+			cemsdk.SendMessage("admin", "chatgroups", []string{r.id}, map[string]string{
+				"type": "txt",
+				"msg":  fmt.Sprintf("当前玩家数 %d", count),
+			}, map[string]string{})
+			cemsdk.SendMessage("admin", "chatgroups", []string{r.id}, map[string]string{
+				"type": "txt",
+				"msg":  fmt.Sprintf("玩家%s 加入房间", player.NicName),
+			}, map[string]string{})
 
 		} else {
 			if player.Active != req.Active {
@@ -342,8 +419,8 @@ func (r *Room) ActiveUser(openid string, req *UserActiveReq) error {
 
 }
 
-func (r *Room) Assistant(uid string,role int) error {
-	if role>1{
+func (r *Room) Assistant(uid string, role int) error {
+	if role > 1 {
 		return fmt.Errorf("cant Understand the role %d", role)
 	}
 	if r.Active() {
@@ -459,17 +536,17 @@ func (r *Room) ConfigRedhat(master string, rr *RedReq) error {
 	if r.redhatMaster != master {
 		return fmt.Errorf("master is %s!", r.redhatMaster)
 	}
-	if rr.Number > 10 || rr.Number < 2 {
-		return fmt.Errorf("number overflow")
+	if rr.Number > r.CountUp || rr.Number < r.CountDown {
+		return fmt.Errorf("count overflow")
 	}
 	//r.gainlimit = rr.ScoreLimt
 
 	if rr.Number == 1 {
 		r.redhats <- &redhat{
-			amount:  int(rr.RedAmount * 100),
-			count:   rr.Diver,
-			timeout: time.Duration(rr.Timeout) * time.Minute,
-			base:    rr.Base,
+			//amount:  int(rr.RedAmount * 100),
+			//count:   rr.Diver,
+			timeout: time.Duration(r.Timeout) * time.Minute,
+			base:    r.base,
 			end:     true,
 		}
 		r.locker.Lock()
@@ -480,18 +557,18 @@ func (r *Room) ConfigRedhat(master string, rr *RedReq) error {
 	r.redhats = make(chan *redhat, rr.Number)
 	for i := 0; i < rr.Number-1; i++ {
 		r.redhats <- &redhat{
-			amount:  int(rr.RedAmount * 100),
-			count:   rr.Diver,
-			timeout: time.Duration(rr.Timeout) * time.Minute,
-			base:    rr.Base,
+			//amount:  int(rr.RedAmount * 100),
+			//count:   rr.Diver,
+			timeout: time.Duration(r.Timeout) * time.Minute,
+			base:    r.base,
 		}
 	}
 
 	r.redhats <- &redhat{
-		amount:  int(rr.RedAmount * 100),
-		count:   rr.Diver,
-		timeout: time.Duration(rr.Timeout) * time.Minute,
-		base:    rr.Base,
+		//amount:  int(rr.RedAmount * 100),
+		//count:   rr.Diver,
+		timeout: time.Duration(r.Timeout) * time.Minute,
+		base:    r.base,
 		end:     true,
 	}
 	// r.locker.Lock()
@@ -532,11 +609,11 @@ func (r *Room) Diver(master string, req *DiverReq) (*Marks, error) {
 		return nil, fmt.Errorf("releave score!")
 	}
 
-	if req.Diver < 2 {
-		return nil, fmt.Errorf("Diver < 2")
+	if req.Diver < r.RedCountDown || req.Diver > r.RedCountUp {
+		return nil, fmt.Errorf("Diver Count overflow")
 	}
 
-	if req.RedAmount < 1 || req.RedAmount > 9.99 {
+	if req.RedAmount < r.RedDown || req.RedAmount > r.RedUp {
 		return nil, fmt.Errorf("RedAmount overflow")
 	}
 
@@ -613,7 +690,7 @@ func (r *Room) GetScore(custom string) (int, error) {
 		return 0, fmt.Errorf("you are master of the work")
 	}
 	r.results[custom] = nil
-	if r.users[custom].Score < r.gainlimit {
+	if r.users[custom].Score < r.ScoreLimit {
 		return 0, fmt.Errorf("your score is below the limit")
 	}
 	score := <-r.score

@@ -1,9 +1,6 @@
 package models
 
-import (
-	"sync"
-	"time"
-)
+import "sync"
 
 const (
 	Role_Custom = iota
@@ -48,15 +45,15 @@ type UserActiveReq struct {
 	Active  bool
 }
 
-type TmpRespone struct {
-	RoomId    string
-	RoomName  string
-	Admin     string
-	StartTime time.Time
-	EndTime   time.Time
-	Active    bool
-	LenUser   int
-}
+// type TmpRespone struct {
+// 	RoomId    string
+// 	RoomName  string
+// 	Admin     string
+// 	StartTime time.Time
+// 	EndTime   time.Time
+// 	Active    bool
+// 	LenUser   int
+// }
 
 func NewUser(u UserReq) *User {
 	userLock.Lock()
@@ -79,17 +76,17 @@ func (u *User) AppendRoom(room *Room, role int) {
 	u.locker.Unlock()
 }
 
-func FetchUserInfo(uid string) (string,map[string]int, error) {
+func FetchUserInfo(uid string) (string, map[string]int, error) {
 	res := map[string]int{}
-	
-	u,err:=cemsdk.GetUser(uid)
-	if err!=nil{
-		return "",res,err
+
+	u, err := cemsdk.GetUser(uid)
+	if err != nil {
+		return "", res, err
 	}
 
 	js, err := cemsdk.FetchGroupFromUserJoined(uid)
 	if err != nil {
-		return "",res, err
+		return "", res, err
 	}
 	for _, v := range js.Data {
 		room, ok := RoomList[v.Groupid]
@@ -101,7 +98,7 @@ func FetchUserInfo(uid string) (string,map[string]int, error) {
 
 		}
 	}
-	return u.Nicname,res, nil
+	return u.Nicname, res, nil
 }
 
 //func AddUser(u User) string {
