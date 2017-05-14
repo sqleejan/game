@@ -7,6 +7,8 @@ import (
 	"sync"
 	"time"
 
+	"strconv"
+
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -224,7 +226,7 @@ func (r *Room) SetStatus(stat int) {
 
 func CreateRoom(req *RoomReq) (*Room, error) {
 	if len(RoomList) > 200 {
-		return nil,fmt.Errorf("the number of rooms overflow!")
+		return nil, fmt.Errorf("the number of rooms overflow!")
 	}
 	gid, err := cemsdk.AddGroup(req.RoomName, "", req.UserId, true, false, req.UserLimit, nil)
 	if err != nil {
@@ -512,6 +514,7 @@ func (r *Room) Assistant(uid string, role int) error {
 			return fmt.Errorf("%s is not in Room: %s", uid, r.id)
 		}
 		r.users[uid].Role = role
+		emsay2user(uid, "room:"+r.id+" role:"+strconv.Itoa(role))
 		return nil
 	}
 	return fmt.Errorf("room is disable")
@@ -765,6 +768,13 @@ func (r *Room) Diver(master string, req *DiverReq) (*Marks, error) {
 
 func emsay(rid string, msg string) {
 	cemsdk.SendMessage("admin", "chatgroups", []string{rid}, map[string]string{
+		"type": "txt",
+		"msg":  msg,
+	}, map[string]string{})
+}
+
+func emsay2user(uid string, msg string) {
+	cemsdk.SendMessage("admin", "users", []string{uid}, map[string]string{
 		"type": "txt",
 		"msg":  msg,
 	}, map[string]string{})
