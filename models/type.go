@@ -44,6 +44,7 @@ type TmpRespone struct {
 	Active    bool
 	LenUser   int
 	ScoreSum  int
+	Status    int
 	//Users        map[string]*Player
 	CountUp      int
 	CountDown    int

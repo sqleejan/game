@@ -11,6 +11,24 @@ info:
     url: http://www.apache.org/licenses/LICENSE-2.0.html
 basePath: /v1
 paths:
+  /auth/admin/login:
+    post:
+      tags:
+      - auth
+      description: 管理员登陆
+      operationId: AuthController.管理员登陆
+      responses:
+        "200":
+          description: '{string} set success'
+  /auth/admin/update:
+    post:
+      tags:
+      - auth
+      description: 管理员密码更新
+      operationId: AuthController.管理员密码更新
+      responses:
+        "200":
+          description: '{string} set success'
   /auth/token:
     post:
       tags:
@@ -138,7 +156,8 @@ paths:
         type: string
       responses:
         "200":
-          description: '{int} score number'
+          schema:
+            $ref: '#/definitions/models.ScoreUnion'
         "403":
           description: query is empty
   /cattle/master:
@@ -203,7 +222,7 @@ paths:
         description: body for room content
         required: true
         schema:
-          $ref: '#/definitions/models.RoomReq'
+          $ref: '#/definitions/models.TmpRoomReq'
       - in: query
         name: token
         description: The token for user
@@ -238,6 +257,27 @@ paths:
             $ref: '#/definitions/models.TmpRespone'
         "403":
           description: :roomid is empty
+    delete:
+      tags:
+      - room
+      description: delete room
+      operationId: RoomController.Delete Room
+      parameters:
+      - in: query
+        name: token
+        description: The token for user
+        required: true
+        type: string
+      - in: path
+        name: roomid
+        description: The roomid
+        required: true
+        type: string
+      responses:
+        "200":
+          description: '{string} ok'
+        "403":
+          description: :roomid is empty
   /room/{roomid}/bill:
     get:
       tags:
@@ -270,6 +310,34 @@ paths:
           description: '{string} success'
         "403":
           description: :roomid is empty
+  /room/config:
+    post:
+      tags:
+      - room
+      description: config room
+      operationId: RoomController.ConfigRoom
+      parameters:
+      - in: body
+        name: body
+        description: body for room content
+        required: true
+        schema:
+          $ref: '#/definitions/models.TmpRoomConfig'
+      - in: query
+        name: roomid
+        description: The id for room
+        required: true
+        type: string
+      - in: query
+        name: token
+        description: The token for user
+        required: true
+        type: string
+      responses:
+        "200":
+          description: '{string} ok'
+        "403":
+          description: body is empty
   /room/list:
     get:
       tags:
@@ -282,6 +350,16 @@ paths:
         description: The token for user
         required: true
         type: string
+      - in: query
+        name: limit
+        description: The default is 20
+        type: integer
+        format: int64
+      - in: query
+        name: page
+        description: The default is 1
+        type: integer
+        format: int64
       responses:
         "200":
           schema:
@@ -311,6 +389,91 @@ paths:
       responses:
         "200":
           description: '{string} success'
+  /room/request:
+    post:
+      tags:
+      - room
+      description: 申请房间
+      operationId: RoomController.房间申请
+      parameters:
+      - in: query
+        name: token
+        description: The token for user
+        required: true
+        type: string
+      - in: body
+        name: body
+        description: body for room content
+        required: true
+        schema:
+          $ref: '#/definitions/models.DBRoomPost'
+      responses:
+        "200":
+          description: '{string} ok'
+  /room/request/{id}:
+    post:
+      tags:
+      - room
+      description: 接受房间申请
+      operationId: RoomController.接受房间申请
+      parameters:
+      - in: query
+        name: token
+        description: The token for user
+        required: true
+        type: string
+      - in: path
+        name: id
+        description: id for room request
+        required: true
+        type: string
+      responses:
+        "200":
+          description: '{string} ok'
+    delete:
+      tags:
+      - room
+      description: 删除房间申请
+      operationId: RoomController.房间申请删除
+      parameters:
+      - in: query
+        name: token
+        description: The token for user
+        required: true
+        type: string
+      - in: path
+        name: id
+        description: id for room request
+        required: true
+        type: string
+      responses:
+        "200":
+          description: '{string} ok'
+  /room/request/list:
+    get:
+      tags:
+      - room
+      description: 房间申请列表
+      operationId: RoomController.房间申请列表
+      parameters:
+      - in: query
+        name: token
+        description: The token for user
+        required: true
+        type: string
+      - in: query
+        name: limit
+        description: The default is 20
+        type: integer
+        format: int64
+      - in: query
+        name: page
+        description: The default is 1
+        type: integer
+        format: int64
+      responses:
+        "200":
+          description: '{string} ok'
   /user/active:
     post:
       tags:
@@ -442,6 +605,22 @@ definitions:
   auth.MyCustomClaims:
     title: MyCustomClaims
     type: object
+  models.DBRoomPost:
+    title: DBRoomPost
+    type: object
+    properties:
+      UserId:
+        type: string
+      active:
+        type: boolean
+      create_at:
+        type: string
+        format: string
+      duration:
+        type: integer
+        format: int64
+      nicname:
+        type: string
   models.DiverReq:
     title: DiverReq
     type: object
@@ -467,43 +646,24 @@ definitions:
     title: RedReq
     type: object
     properties:
-      Base:
+      Number:
         type: integer
         format: int64
-      Diver:
+  models.ScoreUnion:
+    title: ScoreUnion
+    type: object
+    properties:
+      Amount:
+        type: number
+        format: float
+      Count:
         type: integer
         format: int64
       Master:
         type: string
-      Number:
-        type: integer
-        format: int64
-      RedAmount:
+      Score:
         type: number
         format: float
-      Timeout:
-        type: integer
-        format: int64
-  models.RoomReq:
-    title: RoomReq
-    type: object
-    properties:
-      Duration:
-        type: integer
-        format: int64
-      RoomName:
-        type: string
-      ScoreLimit:
-        type: integer
-        format: int64
-      UserId:
-        type: string
-      UserLimit:
-        type: integer
-        format: int64
-      Water:
-        type: integer
-        format: int64
   models.TmpClaims:
     title: TmpClaims
     type: object
@@ -533,19 +693,135 @@ definitions:
         type: boolean
       Admin:
         type: string
+      Banker:
+        type: string
+      Base:
+        type: integer
+        format: int64
+      CountDown:
+        type: integer
+        format: int64
+      CountUp:
+        type: integer
+        format: int64
       EndTime:
         type: string
         format: string
       LenUser:
         type: integer
         format: int64
+      RedCountDown:
+        type: integer
+        format: int64
+      RedCountUp:
+        type: integer
+        format: int64
+      RedDown:
+        type: number
+        format: float
+      RedUp:
+        type: number
+        format: float
       RoomId:
         type: string
       RoomName:
         type: string
+      ScoreLimit:
+        type: integer
+        format: int64
+      ScoreSum:
+        type: integer
+        format: int64
       StartTime:
         type: string
         format: string
+      Status:
+        type: integer
+        format: int64
+      Timeout:
+        type: integer
+        format: int64
+      Water:
+        type: integer
+        format: int64
+  models.TmpRoomConfig:
+    title: TmpRoomConfig
+    type: object
+    properties:
+      Base:
+        type: integer
+        format: int64
+      CountDown:
+        type: integer
+        format: int64
+      CountUp:
+        type: integer
+        format: int64
+      RedCountDown:
+        type: integer
+        format: int64
+      RedCountUp:
+        type: integer
+        format: int64
+      RedDown:
+        type: number
+        format: float
+      RedUp:
+        type: number
+        format: float
+      ScoreLimit:
+        type: integer
+        format: int64
+      Timeout:
+        type: integer
+        format: int64
+      Water:
+        type: integer
+        format: int64
+  models.TmpRoomReq:
+    title: TmpRoomReq
+    type: object
+    properties:
+      Base:
+        type: integer
+        format: int64
+      CountDown:
+        type: integer
+        format: int64
+      CountUp:
+        type: integer
+        format: int64
+      Duration:
+        type: integer
+        format: int64
+      RedCountDown:
+        type: integer
+        format: int64
+      RedCountUp:
+        type: integer
+        format: int64
+      RedDown:
+        type: number
+        format: float
+      RedUp:
+        type: number
+        format: float
+      RoomName:
+        type: string
+      ScoreLimit:
+        type: integer
+        format: int64
+      Timeout:
+        type: integer
+        format: int64
+      UserId:
+        type: string
+      UserLimit:
+        type: integer
+        format: int64
+      Water:
+        type: integer
+        format: int64
   models.UserActiveReq:
     title: UserActiveReq
     type: object

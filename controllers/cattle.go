@@ -5,6 +5,8 @@ import (
 	"game/auth"
 	"game/models"
 
+	"fmt"
+
 	"github.com/astaxie/beego"
 )
 
@@ -20,6 +22,7 @@ type CattleController struct {
 // @Success 200 {string} success
 // @router /create [post]
 func (u *CattleController) Post() {
+	print("action:qizhuang")
 	token := u.GetString("token")
 	mc, err := auth.Parse(token)
 	if err != nil {
@@ -62,6 +65,7 @@ func (u *CattleController) Post() {
 // @Failure 403 body is empty
 // @router /config [post]
 func (u *CattleController) Config() {
+	print("action:configzhuang")
 	token := u.GetString("token")
 	mc, err := auth.Parse(token)
 	if err != nil {
@@ -78,7 +82,7 @@ func (u *CattleController) Config() {
 		u.CustomAbort(500, "the room is not exist")
 		return
 	} else {
-		if !room.IsAnyone(mc.Id) {
+		if !room.IsAssistant(mc.Id) && !room.IsAdmin(mc.Id) {
 			u.CustomAbort(405, "permission is not allow!")
 			return
 		}
@@ -88,7 +92,7 @@ func (u *CattleController) Config() {
 			u.CustomAbort(500, err.Error())
 			return
 		} else {
-			if err := room.ConfigRedhat(mc.Id, &req); err != nil {
+			if err := room.ConfigRedhat(&req); err != nil {
 				u.CustomAbort(500, err.Error())
 				return
 			} else {
@@ -108,12 +112,14 @@ func (u *CattleController) Config() {
 // @Failure 403 body is empty
 // @router /master [post]
 func (u *CattleController) Master() {
+
 	token := u.GetString("token")
 	mc, err := auth.Parse(token)
 	if err != nil {
 		u.CustomAbort(405, err.Error())
 		return
 	}
+	print(fmt.Sprintf("action:qiangzhuang %v", mc.Id))
 	// if mc.Id != "admin" {
 	// 	u.CustomAbort(405, "permission is not allow!")
 	// 	return
@@ -152,6 +158,7 @@ func (u *CattleController) Discard() {
 		u.CustomAbort(405, err.Error())
 		return
 	}
+	print(fmt.Sprintf("action:fangqizhuang %v", mc.Id))
 	// if mc.Id != "admin" {
 	// 	u.CustomAbort(405, "permission is not allow!")
 	// 	return
@@ -162,7 +169,7 @@ func (u *CattleController) Discard() {
 		u.CustomAbort(500, "the room is not exist")
 		return
 	} else {
-		if !room.IsAdmin(mc.Id) && !room.IsAssistant(mc.Id) {
+		if !room.IsAnyone(mc.Id) {
 			u.CustomAbort(405, "permission is not allow!")
 			return
 		}
@@ -194,6 +201,7 @@ func (u *CattleController) Distribute() {
 		u.CustomAbort(405, err.Error())
 		return
 	}
+	print(fmt.Sprintf("action:fahongbao %v", mc.Id))
 	rid := u.GetString("roomid")
 	room, ok := models.RoomList[rid]
 	if !ok {
@@ -207,12 +215,16 @@ func (u *CattleController) Distribute() {
 			u.CustomAbort(500, err.Error())
 			return
 		} else {
+			print(req)
 			rs, err := room.Diver(mc.Id, &req)
+			fmt.Println("distribute socre....")
+			print(rs)
+			print(err)
 			if err != nil {
 				u.CustomAbort(500, err.Error())
 				return
 			} else {
-
+				//print(rs)
 				u.Data["json"] = rs
 
 			}
@@ -227,7 +239,7 @@ func (u *CattleController) Distribute() {
 // @Description gain cattle
 // @Param	token		query 	string	true		"The token for user"
 // @Param	roomid		query 	string	true		"The roomid for cattle"
-// @Success 200 {int} score number
+// @Success 200 {object} models.ScoreUnion
 // @Failure 403 query is empty
 // @router /gain [get]
 func (u *CattleController) Gain() {
@@ -237,6 +249,8 @@ func (u *CattleController) Gain() {
 		u.CustomAbort(405, err.Error())
 		return
 	}
+
+	print(fmt.Sprintf("action:qianghongbao %v", mc.Id))
 	rid := u.GetString("roomid")
 	room, ok := models.RoomList[rid]
 	if !ok {
@@ -247,13 +261,17 @@ func (u *CattleController) Gain() {
 			u.CustomAbort(405, "permission is not allow!")
 			return
 		}
+
 		score, err := room.GetScore(mc.Id)
+		fmt.Println("gain socre....")
+		print(score)
+		print(err)
 		if err != nil {
 			u.CustomAbort(500, err.Error())
 			return
 		} else {
 
-			u.Data["json"] = float32(score) / 100
+			u.Data["json"] = score
 
 		}
 	}

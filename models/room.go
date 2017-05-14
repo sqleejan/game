@@ -133,6 +133,23 @@ type RoomRespone struct {
 	LenUser   int
 	ScoreSum  int
 	Users     map[string]*Player
+	Status    int
+	Scope
+}
+
+type RoomResponeNoUsers struct {
+	RoomId    string
+	RoomName  string
+	Base      int
+	Water     int
+	Admin     string
+	Banker    string
+	StartTime time.Time
+	EndTime   time.Time
+	Active    bool
+	LenUser   int
+	ScoreSum  int
+	Status    int
 	Scope
 }
 
@@ -154,6 +171,38 @@ func (r *Room) Convert() *RoomRespone {
 		LenUser:   len(r.users),
 		ScoreSum:  sumScore,
 		Users:     r.users,
+		Status:    r.status,
+		Scope: Scope{
+			CountUp:      r.CountUp,
+			CountDown:    r.CountDown,
+			RedDown:      r.RedDown,
+			RedUp:        r.RedUp,
+			RedCountDown: r.RedCountDown,
+			RedCountUp:   r.RedCountUp,
+			Timeout:      r.Timeout,
+			ScoreLimit:   r.ScoreLimit,
+		},
+	}
+}
+
+func (r *Room) ConvertNoUsers() *RoomResponeNoUsers {
+	sumScore := 0
+	for _, u := range r.users {
+		sumScore += u.Score
+	}
+	return &RoomResponeNoUsers{
+		RoomId:    r.id,
+		RoomName:  r.name,
+		Base:      r.base,
+		Water:     r.water,
+		Admin:     r.admin,
+		Banker:    r.redhatMaster,
+		StartTime: r.startTime,
+		EndTime:   r.endTime,
+		Active:    r.active,
+		LenUser:   len(r.users),
+		ScoreSum:  sumScore,
+		Status:    r.status,
 		Scope: Scope{
 			CountUp:      r.CountUp,
 			CountDown:    r.CountDown,
@@ -174,6 +223,9 @@ func (r *Room) SetStatus(stat int) {
 }
 
 func CreateRoom(req *RoomReq) (*Room, error) {
+	if len(RoomList) > 200 {
+		return nil,fmt.Errorf("the number of rooms overflow!")
+	}
 	gid, err := cemsdk.AddGroup(req.RoomName, "", req.UserId, true, false, req.UserLimit, nil)
 	if err != nil {
 		return nil, err
@@ -217,6 +269,9 @@ func CreateRoom(req *RoomReq) (*Room, error) {
 		Score:  0,
 	}
 	room.users[req.UserId] = adminPlayer
+	if err := room.Insert(); err != nil {
+		cemsdk.DelGroup(gid)
+	}
 	roomLock.Lock()
 	RoomList[gid] = room
 	roomLock.Unlock()
@@ -230,14 +285,14 @@ type RoomConfig struct {
 }
 
 type Scope struct {
-	CountUp      int
-	CountDown    int
-	RedDown      float32
-	RedUp        float32
-	RedCountDown int
-	RedCountUp   int
-	Timeout      int
-	ScoreLimit   int
+	CountUp      int     `db:"count_up"`
+	CountDown    int     `db:"count_down"`
+	RedDown      float32 `db:"red_down"`
+	RedUp        float32 `db:"red_up"`
+	RedCountDown int     `db:"redcount_down"`
+	RedCountUp   int     `db:"redcount_up"`
+	Timeout      int     `db:"timeout"`
+	ScoreLimit   int     `db:"score_limit"`
 }
 
 func (r *Room) Config(req *RoomConfig) error {
@@ -256,7 +311,8 @@ func (r *Room) Config(req *RoomConfig) error {
 	r.RedUp = req.RedUp
 	r.Timeout = req.Timeout
 	r.ScoreLimit = req.ScoreLimit
-	return nil
+
+	return r.Update()
 }
 
 func (r *Room) Active() bool {
@@ -317,6 +373,7 @@ func (r *Room) AppendUser(openid string, nicname string) (string, error) {
 
 		token, err := GetToken(openid)
 		if err != nil {
+			fmt.Println("huanxin:", err)
 			return "", err
 		}
 		_, ok := r.users[openid]
@@ -360,32 +417,52 @@ func (r *Room) ActiveUser(openid string, req *UserActiveReq) error {
 			return fmt.Errorf("you must join room at first!")
 		}
 		if req.Active {
+			var creater bool
+			var updater bool
+			var err error
+
 			if player.Active != req.Active {
-				err := cemsdk.AddUserToGroup(r.id, openid)
-				if err != nil && !strings.Contains(err.Error(), "already in group") {
+				errt := cemsdk.AddUserToGroup(r.id, openid)
+				defer func() {
+					if err != nil {
+						cemsdk.DelUserFromGroup(r.id, openid)
+					}
+				}()
+				if errt != nil && !strings.Contains(errt.Error(), "already in group") {
+					err = errt
 					return err
 				}
+				creater = true
+
 			}
 			player.Active = true
-			player.Score = req.Score
+
+			if player.Score != req.Score {
+				player.Score = req.Score
+				updater = true
+
+			}
 			if player.NicName != req.Nicname {
-				err := cemsdk.ChangeNickname(openid, req.Nicname)
+				err = cemsdk.ChangeNickname(openid, req.Nicname)
 				if err != nil {
 					return err
 				}
-				u := &DBUser{}
-				u.Id = openid
-				err = u.Fetch(dBEngine)
+				player.NicName = req.Nicname
+				updater = true
+
+			}
+			if creater {
+				err = player.Insert(r.id, openid)
 				if err != nil {
 					return err
 				}
-				u.NickName = req.Nicname
-				err = u.Update(dBEngine)
+			} else if updater {
+				err = player.Update(r.id, openid)
 				if err != nil {
 					return err
 				}
 			}
-			player.NicName = req.Nicname
+
 			count := 0
 			for _, v := range r.users {
 				if v.Active {
@@ -522,7 +599,7 @@ func (r *Room) MasterRedhat(master string) error {
 	return nil
 }
 
-func (r *Room) ConfigRedhat(master string, rr *RedReq) error {
+func (r *Room) ConfigRedhat(rr *RedReq) error {
 	if !r.Active() {
 		return fmt.Errorf("the room is disable")
 	}
@@ -533,10 +610,10 @@ func (r *Room) ConfigRedhat(master string, rr *RedReq) error {
 	if r.status != Stat_Qiangzhuang {
 		return fmt.Errorf("the room stat is %d!", r.status)
 	}
-	if r.redhatMaster != master {
-		return fmt.Errorf("master is %s!", r.redhatMaster)
-	}
-	if rr.Number > r.CountUp || rr.Number < r.CountDown {
+	// if r.redhatMaster != master {
+	// 	return fmt.Errorf("master is %s!", r.redhatMaster)
+	// }
+	if rr.Number > r.CountUp || rr.Number < r.CountDown || rr.Number < 1 {
 		return fmt.Errorf("count overflow")
 	}
 	//r.gainlimit = rr.ScoreLimt
@@ -583,8 +660,12 @@ func (r *Room) Discard() error {
 	if !(r.status > Stat_Kongxian) {
 		return fmt.Errorf("the room stat is idle!")
 	}
+	if r.HaveScore() {
+		return fmt.Errorf("red leaved!")
+	}
 	r.scoreClear()
 	r.redhatClear()
+	emsay(r.id, "庄家弃庄")
 	return nil
 }
 
@@ -624,6 +705,13 @@ func (r *Room) Diver(master string, req *DiverReq) (*Marks, error) {
 	close(r.echo)
 	r.echo = make(chan *result)
 
+	//传递信息给抢红的用户
+	r.results["000--"] = &result{
+		custom: master,
+		score:  rd.amount,
+		bay:    req.Diver,
+	}
+	fmt.Println("score amount: %d", rd.amount)
 	GenerateScore(rd.amount, rd.count, r.score)
 	masterscore := <-r.score
 	response := []*result{&result{
@@ -638,9 +726,10 @@ func (r *Room) Diver(master string, req *DiverReq) (*Marks, error) {
 		select {
 		case <-time.After(rd.timeout):
 			close(r.score)
-			r.locker.Lock()
-			r.hasScore = false
-			r.locker.Unlock()
+			// r.locker.Lock()
+			// r.hasScore = false
+			// r.locker.Unlock()
+			r.scoreClear()
 			r.redhats <- rd
 			return nil, fmt.Errorf("diver timeout!")
 		case rs := <-r.echo:
@@ -655,7 +744,14 @@ func (r *Room) Diver(master string, req *DiverReq) (*Marks, error) {
 					Record(r.id, r.name, r.admin, reports)
 					if rd.end {
 						r.redhatClear()
+						emsay(r.id, "本轮坐庄结束")
 					}
+					// nicname:=""
+					// um,ok1:=r.users[master]
+					// if ok1{
+					// 	nicname=um.NicName
+					// }
+
 					return reports, nil
 				}
 				response = append(response, rs)
@@ -667,13 +763,27 @@ func (r *Room) Diver(master string, req *DiverReq) (*Marks, error) {
 
 }
 
-func (r *Room) GetScore(custom string) (int, error) {
+func emsay(rid string, msg string) {
+	cemsdk.SendMessage("admin", "chatgroups", []string{rid}, map[string]string{
+		"type": "txt",
+		"msg":  msg,
+	}, map[string]string{})
+}
+
+type ScoreUnion struct {
+	Master string
+	Score  float32
+	Amount float32
+	Count  int
+}
+
+func (r *Room) GetScore(custom string) (*ScoreUnion, error) {
 	if !r.Active() {
-		return 0, fmt.Errorf("the room is disable")
+		return nil, fmt.Errorf("the room is disable")
 	}
 
 	if !r.HaveScore() {
-		return 0, fmt.Errorf("have no score")
+		return nil, fmt.Errorf("have no score")
 	}
 
 	//	score, isClosed := <-r.score
@@ -684,14 +794,14 @@ func (r *Room) GetScore(custom string) (int, error) {
 	//		return 0, fmt.Errorf("diver timeout")
 	//	}
 	if _, ok := r.results[custom]; ok {
-		return 0, fmt.Errorf("you have a score")
+		return nil, fmt.Errorf("you have a score")
 	}
 	if custom == r.redhatMaster {
-		return 0, fmt.Errorf("you are master of the work")
+		return nil, fmt.Errorf("you are master of the work")
 	}
 	r.results[custom] = nil
 	if r.users[custom].Score < r.ScoreLimit {
-		return 0, fmt.Errorf("your score is below the limit")
+		return nil, fmt.Errorf("your score is below the limit")
 	}
 	score := <-r.score
 
@@ -703,14 +813,31 @@ func (r *Room) GetScore(custom string) (int, error) {
 		}
 		r.hasScore = false
 		r.locker.Unlock()
-		return -score, nil
+		res := &ScoreUnion{}
+		res.Score = float32(-score) / 100
+		//获取红信息
+		if rt, ok := r.results["000--"]; ok {
+			res.Master = rt.custom
+			res.Count = rt.bay
+			res.Amount = float32(rt.score) / 100
+		}
+		return res, nil
+		//return -score, nil
 	}
 
 	r.echo <- &result{
 		custom: custom,
 		score:  score,
 	}
-	return score, nil
+	res := &ScoreUnion{}
+	res.Score = float32(score) / 100
+	//获取红信息
+	if rt, ok := r.results["000--"]; ok {
+		res.Master = rt.custom
+		res.Count = rt.bay
+		res.Amount = float32(rt.score) / 100
+	}
+	return res, nil
 
 }
 
@@ -786,6 +913,7 @@ func GenerateScore(sum int, count int, score chan int) {
 	}
 	suarray[count-1] = sum
 	for i := 0; i < count; i++ {
+		fmt.Println("generate score: %d", suarray[i])
 		if i == count-1 {
 			score <- -suarray[i]
 		} else {
@@ -826,10 +954,12 @@ func (r *Room) juge(rs []*result, base int, water int) {
 			sum -= ba * base
 		}
 		r.users[rs[i].custom].Score += rs[i].bay
+		r.users[rs[i].custom].Update(r.id, rs[i].custom)
 		//rs[i].score = float32(rs[i].score) / 100
 	}
 	begin.bay = sum - water*len(rs)
 	r.users[begin.custom].Score += begin.bay
+	r.users[begin.custom].Update(r.id, begin.custom)
 	//last.score = float32(last.score) / 100
 }
 
@@ -864,6 +994,7 @@ func Clear() {
 		if !room.Active() {
 			if room.endTime.Before(room.startTime.Add(time.Since(room.endTime))) {
 				room.Close()
+				room.DeleteDB()
 			}
 		}
 	}
@@ -894,14 +1025,16 @@ func init() {
 	if err := dBEngine.CreateTablesIfNotExists(); err != nil {
 		panic("db init fail")
 	}
-	list, err := cemsdk.FetchAllGroupFromApp()
-	if err != nil {
-		panic(err)
-	}
-	for _, v := range list.Data {
-		if strings.HasPrefix(v.Groupname, RoomNamePrefix) {
-			cemsdk.DelGroup(v.Groupid)
-		}
-	}
+	adminInsert()
+	RoomInit(dBEngine)
+	// list, err := cemsdk.FetchAllGroupFromApp()
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// for _, v := range list.Data {
+	// 	if strings.HasPrefix(v.Groupname, RoomNamePrefix) {
+	// 		cemsdk.DelGroup(v.Groupid)
+	// 	}
+	// }
 
 }

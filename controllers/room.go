@@ -5,6 +5,8 @@ import (
 	"game/auth"
 	"game/models"
 
+	"fmt"
+
 	"github.com/astaxie/beego"
 )
 
@@ -15,7 +17,7 @@ type RoomController struct {
 
 // @Title CreateRoom
 // @Description create room
-// @Param	body		body 	models.RoomReq	true		"body for room content"
+// @Param	body		body 	models.TmpRoomReq	true		"body for room content"
 // @Param	token		query 	string	true		"The token for user"
 // @Success 200 {object} models.TmpRespone
 // @Failure 403 body is empty
@@ -39,6 +41,7 @@ func (u *RoomController) Post() {
 		return
 		//u.Data["json"] = err.Error()
 	} else {
+		print(req)
 		room, err := models.CreateRoom(&req)
 		if err != nil {
 			u.CustomAbort(500, err.Error())
@@ -50,9 +53,57 @@ func (u *RoomController) Post() {
 	u.ServeJSON()
 }
 
+// @Title ConfigRoom
+// @Description config room
+// @Param	body		body 	models.TmpRoomConfig	true		"body for room content"
+// @Param	roomid		query 	string	true		"The id for room"
+// @Param	token		query 	string	true		"The token for user"
+// @Success 200 {string} ok
+// @Failure 403 body is empty
+// @router /config [post]
+func (u *RoomController) Config() {
+	token := u.GetString("token")
+	mc, err := auth.Parse(token)
+	if err != nil {
+		u.CustomAbort(405, err.Error())
+		return
+	}
+	var req models.RoomConfig
+	err = json.Unmarshal(u.Ctx.Input.RequestBody, &req)
+	if err != nil {
+		u.CustomAbort(500, err.Error())
+		return
+		//u.Data["json"] = err.Error()
+	}
+	print(req)
+	roomid := u.GetString("roomid")
+	if roomid != "" {
+		room, ok := models.RoomList[roomid]
+		if !ok {
+			u.CustomAbort(500, "the room is not exist")
+			return
+		}
+		if !room.IsAdmin(mc.Id) {
+			u.CustomAbort(405, "permission is not allow!")
+			return
+		}
+		err = room.Config(&req)
+		if err != nil {
+			u.CustomAbort(500, err.Error())
+			return
+		}
+		u.Data["json"] = "ok"
+
+	}
+
+	u.ServeJSON()
+}
+
 // @Title GetAll
 // @Description get all Rooms
 // @Param	token		query 	string	true		"The token for user"
+// @Param	limit		query 	int		false		"The default is 20"
+// @Param	page		query 	int		false		"The default is 1"
 // @Success 200 {object} models.TmpRespone
 // @router /list [get]
 func (u *RoomController) GetAll() {
@@ -66,11 +117,25 @@ func (u *RoomController) GetAll() {
 	// 	u.CustomAbort(405, "permission is not allow!")
 	// 	return
 	// }
-	rooms := []interface{}{}
-	for _, r := range models.RoomList {
-		rooms = append(rooms, r.Convert())
+
+	page, err := u.GetInt("page", 1)
+	if err != nil {
+		u.CustomAbort(405, err.Error())
+		return
 	}
-	u.Data["json"] = rooms
+	limit, err := u.GetInt("limit", 10)
+	if err != nil {
+		u.CustomAbort(405, err.Error())
+		return
+	}
+	// rooms := []interface{}{}
+	// for _, r := range models.RoomList {
+	// 	if r.Active() {
+	// 		rooms = append(rooms, r.Convert())
+	// 	}
+	// }
+
+	u.Data["json"] = models.RLConvert(models.RoomList).Convert(page, limit)
 	u.ServeJSON()
 }
 
@@ -99,6 +164,40 @@ func (u *RoomController) Get() {
 				u.CustomAbort(405, "permission is not allow!")
 				return
 			}
+			print(room.Convert())
+			u.Data["json"] = room.Convert()
+		}
+	}
+	u.ServeJSON()
+}
+
+// @Title Delete Room
+// @Description delete room
+// @Param	token		query 	string	true		"The token for user"
+// @Param	roomid		path 	string	true		"The roomid "
+// @Success 200 {string} ok
+// @Failure 403 :roomid is empty
+// @router /:roomid [delete]
+func (u *RoomController) DeleteRoom() {
+	token := u.GetString("token")
+	mc, err := auth.Parse(token)
+	if err != nil {
+		u.CustomAbort(405, err.Error())
+		return
+	}
+	if mc.Id != "admin" {
+		u.CustomAbort(500, "permission is not allow!")
+		return
+	}
+	roomid := u.GetString(":roomid")
+	if roomid != "" {
+		room, ok := models.RoomList[roomid]
+		if !ok {
+			u.CustomAbort(500, "the room is not exist")
+			return
+		} else {
+			room.Close()
+			fmt.Println(room.DeleteDB())
 			u.Data["json"] = room.Convert()
 		}
 	}
@@ -191,4 +290,160 @@ func (u *RoomController) ListDB() {
 	u.Data["json"] = list
 
 	u.ServeJSON()
+}
+
+// @Title 房间申请
+// @Description 申请房间
+// @Param	token		query 	string	true		"The token for user"
+// @Param	body		body 	models.DBRoomPost	true		"body for room content"
+// @Success 200 {string} ok
+// @router /request [post]
+func (u *RoomController) Request() {
+	token := u.GetString("token")
+	mc, err := auth.Parse(token)
+	if err != nil {
+		u.CustomAbort(405, err.Error())
+		return
+	}
+
+	var req models.DBRoomPost
+	err = json.Unmarshal(u.Ctx.Input.RequestBody, &req)
+	if err != nil {
+		u.CustomAbort(500, err.Error())
+		return
+		//u.Data["json"] = err.Error()
+	} else {
+		req.UserId = mc.Id
+		err = req.Insert()
+		if err != nil {
+			u.CustomAbort(500, err.Error())
+			return
+		}
+	}
+
+	u.Data["json"] = "ok"
+
+	u.ServeJSON()
+}
+
+// @Title 房间申请删除
+// @Description 删除房间申请
+// @Param	token		query 	string	true		"The token for user"
+// @Param	id			path 	string	true		"id for room request"
+// @Success 200 {string} ok
+// @router /request/:id [delete]
+func (u *RoomController) RequestDelete() {
+	token := u.GetString("token")
+	mc, err := auth.Parse(token)
+	if err != nil {
+		u.CustomAbort(405, err.Error())
+		return
+	}
+	if mc.Id != "admin" {
+		u.CustomAbort(405, "permission is not allow!")
+		return
+	}
+
+	del := models.DBRoomPost{}
+	del.UserId = u.GetString(":id")
+	err = del.Delete()
+	if err != nil {
+		u.CustomAbort(405, err.Error())
+		return
+	}
+
+	u.Data["json"] = "ok"
+
+	u.ServeJSON()
+}
+
+// @Title 接受房间申请
+// @Description 接受房间申请
+// @Param	token		query 	string	true		"The token for user"
+// @Param	id			path 	string	true		"id for room request"
+// @Success 200 {string} ok
+// @router /request/:id [post]
+func (u *RoomController) RequestAccept() {
+	token := u.GetString("token")
+	//fmt.Println("id=", u.GetString(":id"))
+	mc, err := auth.Parse(token)
+	if err != nil {
+		u.CustomAbort(405, err.Error())
+		return
+	}
+	if mc.Id != "admin" {
+		u.CustomAbort(405, "permission is not allow!")
+		return
+	}
+
+	accept := models.DBRoomPost{}
+	accept.UserId = u.GetString(":id")
+
+	err = accept.Fetch()
+
+	if err != nil {
+		u.CustomAbort(405, err.Error())
+		return
+	}
+
+	err = accept.CreateRoom()
+	if err != nil {
+		u.CustomAbort(406, err.Error())
+		return
+	}
+
+	u.Data["json"] = "ok"
+
+	u.ServeJSON()
+}
+
+// @Title 房间申请列表
+// @Description 房间申请列表
+// @Param	token		query 	string	true		"The token for user"
+// @Param	limit		query 	int		false		"The default is 20"
+// @Param	page		query 	int		false		"The default is 1"
+// @Success 200 {string} ok
+// @router /request/list [get]
+func (u *RoomController) RequestList() {
+	token := u.GetString("token")
+	mc, err := auth.Parse(token)
+	if err != nil {
+		u.CustomAbort(405, err.Error())
+		return
+	}
+	if mc.Id != "admin" {
+		u.CustomAbort(405, "permission is not allow!")
+		return
+	}
+
+	page, err := u.GetInt("page", 1)
+	if err != nil {
+		u.CustomAbort(405, err.Error())
+		return
+	}
+	limit, err := u.GetInt("limit", 10)
+	if err != nil {
+		u.CustomAbort(405, err.Error())
+		return
+	}
+
+	body, err := models.ListRoomPosts(page, limit)
+
+	if err != nil {
+		u.CustomAbort(405, err.Error())
+		return
+	}
+
+	u.Data["json"] = body
+
+	u.ServeJSON()
+}
+
+func print(v interface{}) {
+	if e, ok := v.(error); ok {
+		fmt.Println(e.Error())
+	}
+	return
+	bts, _ := json.MarshalIndent(v, "", " ")
+	fmt.Println(string(bts))
 }

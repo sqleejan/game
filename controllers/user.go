@@ -62,20 +62,24 @@ func (u *UserController) Active() {
 		u.CustomAbort(405, err.Error())
 		return
 	}
+
 	rid := u.GetString("roomid")
 	room, ok := models.RoomList[rid]
 	if !ok {
 		u.CustomAbort(500, "the room is not exist")
 		return
 	} else {
-
+		if !room.IsAdmin(mc.Id) {
+			u.CustomAbort(405, "permission is not allow!")
+			return
+		}
 		var req models.UserActiveReq
 		err := json.Unmarshal(u.Ctx.Input.RequestBody, &req)
 		if err != nil {
 			u.CustomAbort(500, err.Error())
 			return
 		} else {
-			err = room.ActiveUser(mc.Id, &req)
+			err = room.ActiveUser(u.GetString("uid"), &req)
 			if err != nil {
 				u.CustomAbort(500, err.Error())
 				return
@@ -172,6 +176,16 @@ func (u *UserController) GetSelf() {
 		return
 	}
 	mc.Audience = nicname
+	for k := range js {
+		room, ok := models.RoomList[k]
+		if !ok {
+			delete(js, k)
+			continue
+		}
+		if !room.Active() {
+			delete(js, k)
+		}
+	}
 	res := struct {
 		*auth.MyCustomClaims
 		Roles map[string]int `json:roles`

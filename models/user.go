@@ -28,10 +28,10 @@ type User struct {
 }
 
 type Player struct {
-	Role    int
-	Score   int
-	NicName string
-	Active  bool
+	Role    int  `db:"role"`
+	Score   int  `db:"score"`
+	NicName string `db:"nickname"`
+	Active  bool `db:"active"`
 }
 
 type UserReq struct {

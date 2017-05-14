@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <!-- <meta name="viewport" content="width=device-width, initial-scale=1.0"> -->
+  <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport" />
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <link href="static/assets/css/reset.css" rel="stylesheet">
+  <link rel="stylesheet" href="static/css/main.css" media="screen" title="no title" charset="utf-8">
+    <link rel="stylesheet" href="static/assets/css/iconfont.css">
+  <title>疯狂土豆</title>
+</head>
+<body>
+  <div class="jion app">
+    <i class="help" id="helpcenter"></i>
+    <div>
+      <div class="tit">疯狂土豆</div>
+      <div class="joinBox">
+        <div class='jionbtn' id="cjfj">
+          创建房间
+        </div>
+        <div class='jionbtn' id="jrfj">
+          加入房间
+        </div>
+      </div>
+    </div>
+
+    <div class="helpcenter">
+      <div class="tit"><i class="iconfont icon-fanhui ret"></i>帮助中心</div>
+      <div class="centerinf">
+        这是一个非常疯狂的游戏，大家在游戏过程中通过抢红包的形式进行游戏，根据每个用户的红包金额，通过一系列算法进行判断，确定输赢。
+      </div>
+    </div>
+
+
+
+    <div class="createRoom">
+      <div class="tit"><i class="iconfont icon-fanhui ret"></i>创建房间</div>
+      <ul class="flexbox">
+        <li>房间信息</li>
+        <li>房间名称：<span id="roomN">等待中...</span></li>
+        <li>房间地址：</li>
+        <li id="roomaddress">等待中...</li>
+        <li><div class="copybtn">复制地址</div></li>
+        <li>
+          <img src="" alt="" class="code" id="code">
+        </li>
+      </ul>
+      <div class="into">
+        确定
+      </div>
+    </div>
+    <div class="joinRoom">
+      <div class="tit"><i class="iconfont icon-fanhui ret"></i>加入房间</div>
+      <ul class="joinRoomBox">
+        <div class="hongbaotop"></div>
+        <li class="title">加入房间</li>
+        <li><input type="text"></li>
+        <li>
+          <ul class="qxqd">
+            <li class="ret">取消</li>
+            <li class="into1">确定</li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+    <div class="roomalllist">
+      <div class="appTitle">
+        <i class="iconfont icon-fanhui return"></i>
+        授权页
+      </div>
+      <div class="assistantbox">
+        <ul class="assistantboxTitle">
+          <li>房间名称</li>
+          <li>房间ID</li>
+          <li>确认</li>
+        </ul>
+        <div class="assistantboxinf roomlistshow">
+          <ul class="assistant">
+            <li><span>微信名称111</span></li>
+            <li><span>房间id</span></li>
+            <li>
+              <button type="button" name="button" class="querenquanxian">进入</button>
+            </li>
+          </ul>
+
+        </div>
+        <div class="loading">
+          
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+
+  <script type='text/javascript' src='./static/assets/js/webim.config.js'></script>
+  <script type='text/javascript' src='./static/assets/js/strophe-1.2.8.min.js'></script>
+  <script type='text/javascript' src='./static/assets/js/websdk-1.4.10.js'></script>
+  <script src="./static/assets/js/flexible.js" charset="utf-8"></script>
+  <script src="./static/assets/js/jquery-1.10.2.min.js" charset="utf-8"></script>
+  <script src="./static/js/main.js" charset="utf-8"></script>
+</body>
+</html>

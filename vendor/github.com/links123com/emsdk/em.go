@@ -3,6 +3,7 @@ package emsdk
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"sync"
 )
 
@@ -39,6 +40,7 @@ type tokenResponse struct {
 }
 
 func (c *Client) GetUserToken(clientID, clientSecret string) (string, error) {
+	fmt.Println(clientID, clientSecret)
 	client = &Client{
 		baseURL:      c.baseURL,
 		clientID:     clientID,

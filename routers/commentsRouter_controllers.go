@@ -20,6 +20,20 @@ func init() {
 			AllowHTTPMethods: []string{"post"},
 			Params: nil})
 
+	beego.GlobalControllerRouter["game/controllers:AuthController"] = append(beego.GlobalControllerRouter["game/controllers:AuthController"],
+		beego.ControllerComments{
+			Method: "Login",
+			Router: `/admin/login`,
+			AllowHTTPMethods: []string{"post"},
+			Params: nil})
+
+	beego.GlobalControllerRouter["game/controllers:AuthController"] = append(beego.GlobalControllerRouter["game/controllers:AuthController"],
+		beego.ControllerComments{
+			Method: "Update",
+			Router: `/admin/update`,
+			AllowHTTPMethods: []string{"post"},
+			Params: nil})
+
 	beego.GlobalControllerRouter["game/controllers:CattleController"] = append(beego.GlobalControllerRouter["game/controllers:CattleController"],
 		beego.ControllerComments{
 			Method: "Post",
@@ -106,6 +120,13 @@ func init() {
 
 	beego.GlobalControllerRouter["game/controllers:RoomController"] = append(beego.GlobalControllerRouter["game/controllers:RoomController"],
 		beego.ControllerComments{
+			Method: "Config",
+			Router: `/config`,
+			AllowHTTPMethods: []string{"post"},
+			Params: nil})
+
+	beego.GlobalControllerRouter["game/controllers:RoomController"] = append(beego.GlobalControllerRouter["game/controllers:RoomController"],
+		beego.ControllerComments{
 			Method: "GetAll",
 			Router: `/list`,
 			AllowHTTPMethods: []string{"get"},
@@ -120,6 +141,13 @@ func init() {
 
 	beego.GlobalControllerRouter["game/controllers:RoomController"] = append(beego.GlobalControllerRouter["game/controllers:RoomController"],
 		beego.ControllerComments{
+			Method: "DeleteRoom",
+			Router: `/:roomid`,
+			AllowHTTPMethods: []string{"delete"},
+			Params: nil})
+
+	beego.GlobalControllerRouter["game/controllers:RoomController"] = append(beego.GlobalControllerRouter["game/controllers:RoomController"],
+		beego.ControllerComments{
 			Method: "Bill",
 			Router: `/:roomid/bill`,
 			AllowHTTPMethods: []string{"get"},
@@ -129,6 +157,34 @@ func init() {
 		beego.ControllerComments{
 			Method: "ListDB",
 			Router: `/listdb`,
+			AllowHTTPMethods: []string{"get"},
+			Params: nil})
+
+	beego.GlobalControllerRouter["game/controllers:RoomController"] = append(beego.GlobalControllerRouter["game/controllers:RoomController"],
+		beego.ControllerComments{
+			Method: "Request",
+			Router: `/request`,
+			AllowHTTPMethods: []string{"post"},
+			Params: nil})
+
+	beego.GlobalControllerRouter["game/controllers:RoomController"] = append(beego.GlobalControllerRouter["game/controllers:RoomController"],
+		beego.ControllerComments{
+			Method: "RequestDelete",
+			Router: `/request/:id`,
+			AllowHTTPMethods: []string{"delete"},
+			Params: nil})
+
+	beego.GlobalControllerRouter["game/controllers:RoomController"] = append(beego.GlobalControllerRouter["game/controllers:RoomController"],
+		beego.ControllerComments{
+			Method: "RequestAccept",
+			Router: `/request/:id`,
+			AllowHTTPMethods: []string{"post"},
+			Params: nil})
+
+	beego.GlobalControllerRouter["game/controllers:RoomController"] = append(beego.GlobalControllerRouter["game/controllers:RoomController"],
+		beego.ControllerComments{
+			Method: "RequestList",
+			Router: `/request/list`,
 			AllowHTTPMethods: []string{"get"},
 			Params: nil})
 

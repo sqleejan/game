@@ -47,3 +47,55 @@ func (u *AuthController) Create() {
 
 	u.ServeJSON()
 }
+
+// @Title 管理员登陆
+// @Description 管理员登陆
+// @Success 200 {string} set success
+// @router /admin/login [post]
+func (u *AuthController) Login() {
+	u.Ctx.Request.ParseForm()
+	input := u.Input()
+	username := input.Get("username")
+	password := input.Get("password")
+	if pw, err := models.GetPassword(username); err != nil {
+		u.CustomAbort(405, err.Error())
+		return
+	} else if pw != password {
+		u.CustomAbort(405, "sercret is wrong")
+		return
+	}
+	var ob auth.MyCustomClaims
+	ob.Id = "admin"
+	ob.ExpiresAt = time.Now().Add(time.Hour * 10).Unix()
+	u.Data["json"] = ob.Token()
+	//u.Data["json"] = "ok"
+
+	u.ServeJSON()
+}
+
+// @Title 管理员密码更新
+// @Description 管理员密码更新
+// @Success 200 {string} set success
+// @router /admin/update [post]
+func (u *AuthController) Update() {
+	u.Ctx.Request.ParseForm()
+	input := u.Input()
+	username := input.Get("username")
+	password := input.Get("password")
+	if pw, err := models.GetPassword(username); err != nil {
+		u.CustomAbort(405, err.Error())
+		return
+	} else if pw != password {
+		u.CustomAbort(405, "sercret is wrong")
+		return
+	}
+	var ob auth.MyCustomClaims
+	ob.Id = "admin"
+	ob.ExpiresAt = time.Now().Add(time.Hour * 10).Unix()
+	u.Data["json"] = ob.Token()
+	//u.Data["json"] = "ok"
+
+	u.ServeJSON()
+}
+
+
