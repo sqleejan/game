@@ -33,6 +33,7 @@ type Room struct {
 	water    int
 	base     int
 	describe string
+	duration int
 	// assistantSum int
 	// assistantNum int
 	admin        string
@@ -135,6 +136,7 @@ type RoomRespone struct {
 	ScoreSum  int
 	Users     map[string]*Player
 	Status    int
+	Isused    bool
 	Scope
 }
 
@@ -151,6 +153,7 @@ type RoomResponeNoUsers struct {
 	LenUser   int
 	ScoreSum  int
 	Status    int
+	Isused    bool
 	Scope
 }
 
@@ -173,6 +176,7 @@ func (r *Room) Convert() *RoomRespone {
 		ScoreSum:  sumScore,
 		Users:     r.users,
 		Status:    r.status,
+		Isused:    r.startTime.IsZero(),
 		Scope: Scope{
 			CountUp:      r.CountUp,
 			CountDown:    r.CountDown,
@@ -205,6 +209,7 @@ func (r *Room) ConvertNoUsers() *RoomResponeNoUsers {
 		LenUser:   len(r.users),
 		ScoreSum:  sumScore,
 		Status:    r.status,
+		Isused:    r.startTime.IsZero(),
 		Scope: Scope{
 			CountUp:      r.CountUp,
 			CountDown:    r.CountDown,
@@ -237,22 +242,23 @@ func CreateRoom(req *RoomReq) (*Room, error) {
 	// 	//Username: req.Username,
 	// })
 	//roomid := string(Krand(8, 1))
-	now := time.Now()
+	//now := time.Now()
 	room := &Room{
-		id:     gid,
-		active: true,
-		base:   req.Base,
-		users:  make(map[string]*Player),
-		admin:  req.UserId,
+		id:       gid,
+		active:   true,
+		base:     req.Base,
+		users:    make(map[string]*Player),
+		admin:    req.UserId,
+		duration: req.Duration,
 		// assistantSum: req.AssistantNum,
 		// assistantNum: 0,
-		startTime: now,
-		endTime:   now.Add(time.Duration(req.Duration) * time.Hour),
-		redhats:   make(chan *redhat, 10),
-		echo:      make(chan *result),
-		results:   make(map[string]*result),
-		water:     req.Water,
-		name:      req.RoomName,
+		//startTime: now,
+		//endTime:   now.Add(time.Duration(req.Duration) * time.Hour),
+		redhats: make(chan *redhat, 10),
+		echo:    make(chan *result),
+		results: make(map[string]*result),
+		water:   req.Water,
+		name:    req.RoomName,
 		Scope: Scope{
 			CountDown:    req.CountDown,
 			CountUp:      req.CountUp,
@@ -321,10 +327,21 @@ func (r *Room) Config(req *RoomConfig) error {
 }
 
 func (r *Room) Active() bool {
+	if r.active == false {
+		return false
+	}
 	r.locker.Lock()
-	r.active = r.endTime.After(time.Now())
+	if r.duration != 0 || (!r.endTime.IsZero() && time.Now().Before(r.endTime)) {
+		r.active = true
+	}else{
+		r.active=false
+	}
 	r.locker.Unlock()
 	return r.active
+}
+
+func (r *Room)Cancle(){
+	r.end()
 }
 
 func (r *Room) Close() {
@@ -337,6 +354,7 @@ func (r *Room) Close() {
 	// 	}
 	// }
 	delete(RoomList, r.id)
+	r.end()
 	go cemsdk.DelGroup(r.id)
 }
 
@@ -367,6 +385,16 @@ func (r *Room) IsAssistant(uid string) bool {
 	}
 	return u.Role == Role_Assistant && u.Active
 }
+
+func (r *Room) IsFinace(uid string) bool {
+	u, ok := r.users[uid]
+	if !ok {
+		return false
+	}
+	return u.Role == Role_Finace && u.Active
+}
+
+Role_Finace
 
 func (r *Room) IsAnyone(uid string) bool {
 	u, ok := r.users[uid]
@@ -493,8 +521,8 @@ func (r *Room) ActiveUser(openid string, req *UserActiveReq) error {
 			// 	"type": "txt",
 			// 	"msg":  fmt.Sprintf("玩家%s 加入房间", player.NicName),
 			// }, map[string]string{})
-			emsay(r.id, fmt.Sprintf(`{"user":"%s","num":%d}`, player.NicName, count))
-			emsay2user(openid, `{"active":1}`)
+			emsay(r.id, fmt.Sprintf(`[{"type":"join"},{"user":"%s"},{"num":%d}]`, player.NicName, count))
+			emsay2user(openid, `[{"type":"active"},{"active":1}]`)
 
 		} else {
 			if player.Active != req.Active {
@@ -504,7 +532,7 @@ func (r *Room) ActiveUser(openid string, req *UserActiveReq) error {
 				}
 			}
 			player.Active = false
-			emsay2user(openid, `{"active":0}`)
+			emsay2user(openid, `[{"type":"active"},{"active":1}`)
 		}
 		return nil
 
@@ -518,15 +546,21 @@ func (r *Room) Renew(dur int) {
 	if dur == 0 {
 		return
 	}
-	r.locker.Lock()
-	defer r.locker.Unlock()
-	now := time.Now()
-	if r.endTime.Before(now) {
-		r.endTime = now.Add(time.Hour * time.Duration(dur))
-	} else {
+	// r.locker.Lock()
+	// defer r.locker.Unlock()
+	// now := time.Now()
+	// if r.endTime.Before(now) {
+	// 	r.endTime = now.Add(time.Hour * time.Duration(dur))
+	// } else {
+	// 	r.endTime = r.endTime.Add(time.Hour * time.Duration(dur))
+	// }
+	// r.active = true
+	if r.Active() {
 		r.endTime = r.endTime.Add(time.Hour * time.Duration(dur))
+	} else {
+		r.duration = dur
+		r.active = true
 	}
-	r.active = true
 	return
 }
 
@@ -546,10 +580,33 @@ func (r *Room) Assistant(uid string, role int) error {
 			return fmt.Errorf("%s is not in Room: %s", uid, r.id)
 		}
 		r.users[uid].Role = role
-		emsay2user(uid, fmt.Sprintf(`{"room":"%s","role":%d}`, r.id, role))
+		emsay2user(uid, fmt.Sprintf(`[{"type":"role"},{"room":"%s"},{"role":%d}]`, r.id, role))
 		return nil
 	}
 	return fmt.Errorf("room is disable")
+}
+
+func (r *Room) start() {
+	now := time.Now()
+	r.startTime = now
+	r.endTime = now.Add(time.Duration(r.duration) * time.Hour)
+	r.duration = 0
+	r.Update()
+}
+
+func (r *Room) end() {
+	// if r.duration != 0 {
+	// 	r.duration = 0
+	// }
+	// if !r.startTime.IsZero() {
+	// 	r.endTime = time.Now()
+	// }
+	var zero time.Time
+	r.duration = 0
+	r.startTime = zero
+	r.endTime = zero
+	r.active = false
+	r.Update()
 }
 
 func (r *Room) SendRedhat() error {
@@ -558,6 +615,9 @@ func (r *Room) SendRedhat() error {
 	}
 	if r.status != Stat_Kongxian {
 		return fmt.Errorf("the room stat is %d!", r.status)
+	}
+	if r.duration != 0 {
+		r.start()
 	}
 	r.SetStatus(Stat_Qizhuang)
 	return nil

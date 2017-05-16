@@ -5,6 +5,7 @@ import "sync"
 const (
 	Role_Custom = iota
 	Role_Assistant
+	Role_Finace
 	Role_Admin
 )
 
@@ -28,10 +29,10 @@ type User struct {
 }
 
 type Player struct {
-	Role    int  `db:"role"`
-	Score   int  `db:"score"`
+	Role    int    `db:"role"`
+	Score   int    `db:"score"`
 	NicName string `db:"nickname"`
-	Active  bool `db:"active"`
+	Active  bool   `db:"active"`
 }
 
 type UserReq struct {
@@ -40,7 +41,6 @@ type UserReq struct {
 }
 
 type UserActiveReq struct {
-	Score   int
 	Nicname string
 	Active  bool
 }

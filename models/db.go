@@ -452,10 +452,10 @@ var dBEngine *gorp.DbMap
 func DBEngineInit() *gorp.DbMap {
 	connectionString := fmt.Sprintf(
 		"%s@tcp(%s:%s)/%s?charset=utf8&parseTime=true&loc=Asia%%2FShanghai&interpolateParams=true",
-		"root:123456", //root:11223344Asdf
+		"root:11223344Asdf", //root:11223344Asdf
 		"127.0.0.1",
 		"3306",
-		"test", //game
+		"game", //game
 	)
 	//connectionString := ""
 	db, err := sql.Open("mysql", connectionString)
@@ -493,6 +493,8 @@ func RoomInit(db gorp.SqlExecutor) {
 			fmt.Println(err)
 			continue
 		}
+		room.active = true
+		room.Active()
 		RoomList[rid] = room
 	}
 }
