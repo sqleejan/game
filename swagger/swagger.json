@@ -116,6 +116,56 @@
                 }
             }
         },
+        "/auth/wx/code": {
+            "post": {
+                "tags": [
+                    "auth"
+                ],
+                "description": "微信认证",
+                "operationId": "AuthController.微信认证",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "state",
+                        "description": "房间ID",
+                        "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "code",
+                        "description": "微信code",
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{string} token"
+                    }
+                }
+            }
+        },
+        "/auth/wx/login": {
+            "post": {
+                "tags": [
+                    "auth"
+                ],
+                "description": "微信认证",
+                "operationId": "AuthController.微信认证",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "roomid",
+                        "description": "房间ID",
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{string} token"
+                    }
+                }
+            }
+        },
         "/cattle/config": {
             "post": {
                 "tags": [
@@ -914,6 +964,13 @@
                         "required": true,
                         "type": "integer",
                         "format": "int64"
+                    },
+                    {
+                        "in": "query",
+                        "name": "uid",
+                        "description": "the id of user",
+                        "required": true,
+                        "type": "string"
                     }
                 ],
                 "responses": {

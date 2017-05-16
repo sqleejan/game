@@ -445,10 +445,10 @@ var dBEngine *gorp.DbMap
 func DBEngineInit() *gorp.DbMap {
 	connectionString := fmt.Sprintf(
 		"%s@tcp(%s:%s)/%s?charset=utf8&parseTime=true&loc=Asia%%2FShanghai&interpolateParams=true",
-		"root:11223344Asdf", //root:11223344Asdf
+		"root:123456", //root:11223344Asdf
 		"127.0.0.1",
 		"3306",
-		"game", //game
+		"test", //game
 	)
 	//connectionString := ""
 	db, err := sql.Open("mysql", connectionString)

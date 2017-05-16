@@ -15,6 +15,20 @@ func init() {
 
 	beego.GlobalControllerRouter["game/controllers:AuthController"] = append(beego.GlobalControllerRouter["game/controllers:AuthController"],
 		beego.ControllerComments{
+			Method: "WXAuth",
+			Router: `/wx/login`,
+			AllowHTTPMethods: []string{"post"},
+			Params: nil})
+
+	beego.GlobalControllerRouter["game/controllers:AuthController"] = append(beego.GlobalControllerRouter["game/controllers:AuthController"],
+		beego.ControllerComments{
+			Method: "WXCode",
+			Router: `/wx/code`,
+			AllowHTTPMethods: []string{"post"},
+			Params: nil})
+
+	beego.GlobalControllerRouter["game/controllers:AuthController"] = append(beego.GlobalControllerRouter["game/controllers:AuthController"],
+		beego.ControllerComments{
 			Method: "Create",
 			Router: `/user/create`,
 			AllowHTTPMethods: []string{"post"},
