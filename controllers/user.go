@@ -70,7 +70,7 @@ func (u *UserController) Active() {
 		return
 	} else {
 		if !room.IsAdmin(mc.Id) {
-			u.CustomAbort(405, "permission is not allow!")
+			u.CustomAbort(408, "permission is not allow!")
 			return
 		}
 		var req models.UserActiveReq
@@ -95,6 +95,49 @@ func (u *UserController) Active() {
 	u.ServeJSON()
 }
 
+// @Title 修改积分
+// @Description 修改积分
+// @Param	token		query 	string	true		"The token for user"
+// @Param	roomid		query 	string	true		"The roomid for user"
+// @Param	score		query 	int		true		"the score of user"
+// @Param	uid			query 	string	true		"the id of user"
+// @Success 200 {string} token
+// @router /score [post]
+func (u *UserController) Score() {
+	token := u.GetString("token")
+	mc, err := auth.Parse(token)
+	if err != nil {
+		u.CustomAbort(405, err.Error())
+		return
+	}
+
+	score, err := u.GetInt("score", 0)
+	if err != nil {
+		u.CustomAbort(407, err.Error())
+		return
+	}
+
+	rid := u.GetString("roomid")
+	room, ok := models.RoomList[rid]
+	if !ok {
+		u.CustomAbort(500, "the room is not exist")
+		return
+	} else {
+		if !room.IsAdmin(mc.Id) {
+			u.CustomAbort(408, "permission is not allow!")
+			return
+		}
+		err = room.ModifyScore(u.GetString("uid"), score)
+		if err != nil {
+			u.CustomAbort(500, err.Error())
+			return
+		}
+		u.Data["json"] = score
+	}
+
+	u.ServeJSON()
+}
+
 // @Title Set Assistant
 // @Description Set Assistant
 // @Param	token		query 	string	true		"The token for user"
@@ -108,7 +151,7 @@ func (u *UserController) Assistant() {
 	token := u.GetString("token")
 	role, err := u.GetInt("role")
 	if err != nil {
-		u.CustomAbort(405, err.Error())
+		u.CustomAbort(407, err.Error())
 		return
 	}
 	mc, err := auth.Parse(token)
@@ -123,7 +166,7 @@ func (u *UserController) Assistant() {
 		return
 	} else {
 		if !room.IsAdmin(mc.Id) {
-			u.CustomAbort(405, "permission is not allow!")
+			u.CustomAbort(408, "permission is not allow!")
 			return
 		}
 
@@ -172,7 +215,7 @@ func (u *UserController) GetSelf() {
 	}
 	nicname, js, err := models.FetchUserInfo(mc.Id)
 	if err != nil {
-		u.CustomAbort(405, err.Error())
+		u.CustomAbort(500, err.Error())
 		return
 	}
 	mc.Audience = nicname

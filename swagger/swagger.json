@@ -16,6 +16,18 @@
     "basePath": "/v1",
     "paths": {
         "/auth/admin/login": {
+            "get": {
+                "tags": [
+                    "auth"
+                ],
+                "description": "管理员登陆页",
+                "operationId": "AuthController.管理员登陆页",
+                "responses": {
+                    "200": {
+                        "description": "{string} set success"
+                    }
+                }
+            },
             "post": {
                 "tags": [
                     "auth"
@@ -869,6 +881,44 @@
                     },
                     "403": {
                         "description": "uid is null"
+                    }
+                }
+            }
+        },
+        "/user/score": {
+            "post": {
+                "tags": [
+                    "user"
+                ],
+                "description": "修改积分",
+                "operationId": "UserController.修改积分",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "token",
+                        "description": "The token for user",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "roomid",
+                        "description": "The roomid for user",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "score",
+                        "description": "the score of user",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int64"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{string} token"
                     }
                 }
             }

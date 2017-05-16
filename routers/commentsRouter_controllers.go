@@ -29,6 +29,13 @@ func init() {
 
 	beego.GlobalControllerRouter["game/controllers:AuthController"] = append(beego.GlobalControllerRouter["game/controllers:AuthController"],
 		beego.ControllerComments{
+			Method: "LoginGet",
+			Router: `/admin/login`,
+			AllowHTTPMethods: []string{"get"},
+			Params: nil})
+
+	beego.GlobalControllerRouter["game/controllers:AuthController"] = append(beego.GlobalControllerRouter["game/controllers:AuthController"],
+		beego.ControllerComments{
 			Method: "Update",
 			Router: `/admin/update`,
 			AllowHTTPMethods: []string{"post"},
@@ -199,6 +206,13 @@ func init() {
 		beego.ControllerComments{
 			Method: "Active",
 			Router: `/active`,
+			AllowHTTPMethods: []string{"post"},
+			Params: nil})
+
+	beego.GlobalControllerRouter["game/controllers:UserController"] = append(beego.GlobalControllerRouter["game/controllers:UserController"],
+		beego.ControllerComments{
+			Method: "Score",
+			Router: `/score`,
 			AllowHTTPMethods: []string{"post"},
 			Params: nil})
 

@@ -411,6 +411,22 @@ func (r *Room) AppendUser(openid string, nicname string) (string, error) {
 	return "", fmt.Errorf("room is disable")
 }
 
+func (r *Room) ModifyScore(openid string, score int) error {
+	if r.Active() {
+		player, ok := r.users[openid]
+		if !ok {
+			return fmt.Errorf("you must join room at first!")
+		}
+		player.Score = score
+		err := player.Update(r.id, openid)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+	return fmt.Errorf("room is disable")
+}
+
 func (r *Room) ActiveUser(openid string, req *UserActiveReq) error {
 
 	if r.Active() {
@@ -439,11 +455,6 @@ func (r *Room) ActiveUser(openid string, req *UserActiveReq) error {
 			}
 			player.Active = true
 
-			if player.Score != req.Score {
-				player.Score = req.Score
-				updater = true
-
-			}
 			if player.NicName != req.Nicname {
 				err = cemsdk.ChangeNickname(openid, req.Nicname)
 				if err != nil {

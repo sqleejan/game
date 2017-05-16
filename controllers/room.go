@@ -30,7 +30,7 @@ func (u *RoomController) Post() {
 		return
 	}
 	if mc.Id != "admin" {
-		u.CustomAbort(405, "permission is not allow!")
+		u.CustomAbort(408, "permission is not allow!")
 		return
 	}
 
@@ -84,7 +84,7 @@ func (u *RoomController) Config() {
 			return
 		}
 		if !room.IsAdmin(mc.Id) {
-			u.CustomAbort(405, "permission is not allow!")
+			u.CustomAbort(408, "permission is not allow!")
 			return
 		}
 		err = room.Config(&req)
@@ -120,12 +120,12 @@ func (u *RoomController) GetAll() {
 
 	page, err := u.GetInt("page", 1)
 	if err != nil {
-		u.CustomAbort(405, err.Error())
+		u.CustomAbort(407, err.Error())
 		return
 	}
 	limit, err := u.GetInt("limit", 10)
 	if err != nil {
-		u.CustomAbort(405, err.Error())
+		u.CustomAbort(407, err.Error())
 		return
 	}
 	// rooms := []interface{}{}
@@ -161,7 +161,7 @@ func (u *RoomController) Get() {
 			return
 		} else {
 			if !room.IsAnyone(mc.Id) && mc.Id != "admin" {
-				u.CustomAbort(405, "permission is not allow!")
+				u.CustomAbort(408, "permission is not allow!")
 				return
 			}
 			print(room.Convert())
@@ -186,7 +186,7 @@ func (u *RoomController) DeleteRoom() {
 		return
 	}
 	if mc.Id != "admin" {
-		u.CustomAbort(500, "permission is not allow!")
+		u.CustomAbort(408, "permission is not allow!")
 		return
 	}
 	roomid := u.GetString(":roomid")
@@ -223,12 +223,12 @@ func (u *RoomController) Bill() {
 	roomid := u.GetString(":roomid")
 	page, err := u.GetInt("page", 1)
 	if err != nil {
-		u.CustomAbort(405, err.Error())
+		u.CustomAbort(407, err.Error())
 		return
 	}
 	limit, err := u.GetInt("limit", 20)
 	if err != nil {
-		u.CustomAbort(405, err.Error())
+		u.CustomAbort(407, err.Error())
 		return
 	}
 	if roomid != "" {
@@ -238,7 +238,7 @@ func (u *RoomController) Bill() {
 			return
 		}
 		if !(room != nil && room.IsAnyone(mc.Id)) && mc.Id != "admin" {
-			u.CustomAbort(405, "permission is not allow!")
+			u.CustomAbort(408, "permission is not allow!")
 			return
 		}
 		b, err := models.BillList(roomid, page, limit)
@@ -267,17 +267,17 @@ func (u *RoomController) ListDB() {
 		return
 	}
 	if mc.Id != "admin" {
-		u.CustomAbort(405, "permission is not allow!")
+		u.CustomAbort(408, "permission is not allow!")
 		return
 	}
 	page, err := u.GetInt("page", 1)
 	if err != nil {
-		u.CustomAbort(405, err.Error())
+		u.CustomAbort(407, err.Error())
 		return
 	}
 	limit, err := u.GetInt("limit", 20)
 	if err != nil {
-		u.CustomAbort(405, err.Error())
+		u.CustomAbort(407, err.Error())
 		return
 	}
 
@@ -340,7 +340,7 @@ func (u *RoomController) RequestDelete() {
 		return
 	}
 	if mc.Id != "admin" {
-		u.CustomAbort(405, "permission is not allow!")
+		u.CustomAbort(408, "permission is not allow!")
 		return
 	}
 
@@ -348,7 +348,7 @@ func (u *RoomController) RequestDelete() {
 	del.UserId = u.GetString(":id")
 	err = del.Delete()
 	if err != nil {
-		u.CustomAbort(405, err.Error())
+		u.CustomAbort(500, err.Error())
 		return
 	}
 
@@ -372,7 +372,7 @@ func (u *RoomController) RequestAccept() {
 		return
 	}
 	if mc.Id != "admin" {
-		u.CustomAbort(405, "permission is not allow!")
+		u.CustomAbort(408, "permission is not allow!")
 		return
 	}
 
@@ -382,7 +382,7 @@ func (u *RoomController) RequestAccept() {
 	err = accept.Fetch()
 
 	if err != nil {
-		u.CustomAbort(405, err.Error())
+		u.CustomAbort(408, err.Error())
 		return
 	}
 
@@ -406,31 +406,32 @@ func (u *RoomController) RequestAccept() {
 // @router /request/list [get]
 func (u *RoomController) RequestList() {
 	token := u.GetString("token")
+	fmt.Println("token:", token)
 	mc, err := auth.Parse(token)
 	if err != nil {
 		u.CustomAbort(405, err.Error())
 		return
 	}
 	if mc.Id != "admin" {
-		u.CustomAbort(405, "permission is not allow!")
+		u.CustomAbort(408, "permission is not allow!")
 		return
 	}
 
 	page, err := u.GetInt("page", 1)
 	if err != nil {
-		u.CustomAbort(405, err.Error())
+		u.CustomAbort(407, err.Error())
 		return
 	}
 	limit, err := u.GetInt("limit", 10)
 	if err != nil {
-		u.CustomAbort(405, err.Error())
+		u.CustomAbort(407, err.Error())
 		return
 	}
 
 	body, err := models.ListRoomPosts(page, limit)
 
 	if err != nil {
-		u.CustomAbort(405, err.Error())
+		u.CustomAbort(500, err.Error())
 		return
 	}
 

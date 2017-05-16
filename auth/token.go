@@ -68,17 +68,17 @@ func QRCode(rid string) ([]byte, error) {
 const (
 	appId       = ""
 	appSecret   = ""
-	redirectURI = ""
-	scope       = ""
+	redirectURI = "http://127.0.0.1:8080/v1/wx/code"
+	scope       = "snsapi_userinfo"
 	state       = ""
 )
 
 func CodeUrl(rid string) string {
-	uri := redirectURI
-	if rid != "" {
-		uri = uri + "&roomid=" + rid
-	}
-	return oauth2.AuthCodeURL(appId, uri, scope, state)
+	// uri := redirectURI
+	// if rid != "" {
+	// 	uri = uri + "&roomid=" + rid
+	// }
+	return oauth2.AuthCodeURL(appId, redirectURI, scope, rid)
 }
 
 func init() {

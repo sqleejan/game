@@ -24,6 +24,7 @@ type CattleController struct {
 func (u *CattleController) Post() {
 	print("action:qizhuang")
 	token := u.GetString("token")
+	rid := u.GetString("roomid")
 	mc, err := auth.Parse(token)
 	if err != nil {
 		u.CustomAbort(405, err.Error())
@@ -33,14 +34,14 @@ func (u *CattleController) Post() {
 	// 	u.CustomAbort(405, "permission is not allow!")
 	// 	return
 	// }
-	rid := u.GetString("roomid")
+
 	room, ok := models.RoomList[rid]
 	if !ok {
 		u.CustomAbort(500, "the room is not exist")
 		return
 	} else {
 		if !room.IsAdmin(mc.Id) && !room.IsAssistant(mc.Id) {
-			u.CustomAbort(405, "permission is not allow!")
+			u.CustomAbort(408, "permission is not allow!")
 			return
 		}
 
@@ -83,7 +84,7 @@ func (u *CattleController) Config() {
 		return
 	} else {
 		if !room.IsAssistant(mc.Id) && !room.IsAdmin(mc.Id) {
-			u.CustomAbort(405, "permission is not allow!")
+			u.CustomAbort(408, "permission is not allow!")
 			return
 		}
 		var req models.RedReq
@@ -131,7 +132,7 @@ func (u *CattleController) Master() {
 		return
 	} else {
 		if room.IsAdmin(mc.Id) || room.IsAssistant(mc.Id) {
-			u.CustomAbort(405, "permission is not allow!")
+			u.CustomAbort(408, "permission is not allow!")
 			return
 		}
 		if err := room.MasterRedhat(mc.Id); err != nil {
@@ -170,7 +171,7 @@ func (u *CattleController) Discard() {
 		return
 	} else {
 		if !room.IsAnyone(mc.Id) {
-			u.CustomAbort(405, "permission is not allow!")
+			u.CustomAbort(408, "permission is not allow!")
 			return
 		}
 
@@ -258,7 +259,7 @@ func (u *CattleController) Gain() {
 		return
 	} else {
 		if !room.IsCustom(mc.Id) {
-			u.CustomAbort(405, "permission is not allow!")
+			u.CustomAbort(408, "permission is not allow!")
 			return
 		}
 
