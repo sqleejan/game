@@ -17,6 +17,7 @@ type TmpRoomReq struct {
 	RedCountDown int
 	RedCountUp   int
 	Timeout      int
+	Describe     string
 }
 
 type TmpRoomConfig struct {
@@ -30,6 +31,7 @@ type TmpRoomConfig struct {
 	RedCountUp   int
 	Timeout      int
 	ScoreLimit   int
+	Describe     string
 }
 
 type TmpRespone struct {
@@ -54,4 +56,5 @@ type TmpRespone struct {
 	RedCountUp   int
 	Timeout      int
 	ScoreLimit   int
+	Describe     string
 }

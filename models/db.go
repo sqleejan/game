@@ -197,6 +197,7 @@ type DBRoom struct {
 	Admin     string    `db:"admin"`
 	StartTime time.Time `db:"start_time"`
 	EndTime   time.Time `db:"end_time"`
+	//	Describe  string    `db:"discrible"`
 	Scope
 }
 
@@ -233,7 +234,7 @@ func (ruser *RoomUser) Insert(db gorp.SqlExecutor) error {
 }
 
 func (ruser *RoomUser) Fetch(db gorp.SqlExecutor) error {
-	return db.SelectOne(ruser, fmt.Sprintf(`select * from %s where uid=%s and room_id="%s"`, ruser.TableName(), ruser.Uid, ruser.RoomId))
+	return db.SelectOne(ruser, fmt.Sprintf(`select * from %s where uid="%s" and room_id="%s"`, ruser.TableName(), ruser.Uid, ruser.RoomId))
 }
 
 func (ruser *RoomUser) Update(db gorp.SqlExecutor) error {
@@ -261,6 +262,7 @@ func (r *Room) Insert() error {
 		Admin:     r.admin,
 		StartTime: r.startTime,
 		EndTime:   r.endTime,
+		//		Describe:  r.describe,
 		Scope: Scope{
 			CountUp:      r.CountUp,
 			CountDown:    r.CountDown,
@@ -270,6 +272,7 @@ func (r *Room) Insert() error {
 			RedCountUp:   r.RedCountUp,
 			Timeout:      r.Timeout,
 			ScoreLimit:   r.ScoreLimit,
+			Describe:     r.Describe,
 		},
 	}
 	err = dbRoom.Insert(trans)
@@ -310,6 +313,7 @@ func (r *Room) Update() error {
 		Admin:     r.admin,
 		StartTime: r.startTime,
 		EndTime:   r.endTime,
+		//		Describe:  r.describe,
 		Scope: Scope{
 			CountUp:      r.CountUp,
 			CountDown:    r.CountDown,
@@ -319,6 +323,7 @@ func (r *Room) Update() error {
 			RedCountUp:   r.RedCountUp,
 			Timeout:      r.Timeout,
 			ScoreLimit:   r.ScoreLimit,
+			Describe:     r.Describe,
 		},
 	}
 	err = dbRoom.Update(trans)
@@ -363,6 +368,8 @@ func (r *Room) Fetch() error {
 	r.RedUp = dbRoom.RedUp
 	r.Timeout = dbRoom.Timeout
 	r.ScoreLimit = dbRoom.ScoreLimit
+	r.Describe = dbRoom.Describe
+	//	r.describe= dbRoom.Describe
 	r.users = make(map[string]*Player)
 	for _, u := range rlist {
 		r.users[u.Uid] = &u.Player

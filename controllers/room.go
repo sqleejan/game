@@ -171,6 +171,44 @@ func (u *RoomController) Get() {
 	u.ServeJSON()
 }
 
+// @Title 续房间
+// @Description 续房间
+// @Param	token		query 	string	true		"The token for user"
+// @Param	duration	query 	int		true		"房间延续时间"
+// @Param	roomid		path 	string	true		"The id for room"
+// @Success 200 {string} ok
+// @Failure 403 :roomid is empty
+// @router /:roomid/renew [post]
+func (u *RoomController) Renew() {
+	token := u.GetString("token")
+	mc, err := auth.Parse(token)
+	if err != nil {
+		u.CustomAbort(405, err.Error())
+		return
+	}
+	dur, err := u.GetInt("duration", 1)
+	if err != nil {
+		u.CustomAbort(407, "duration format is wrong!")
+		return
+	}
+	roomid := u.GetString(":roomid")
+	if roomid != "" {
+		room, ok := models.RoomList[roomid]
+		if !ok {
+			u.CustomAbort(500, "the room is not exist")
+			return
+		} else {
+			if mc.Id != "admin" {
+				u.CustomAbort(408, "permission is not allow!")
+				return
+			}
+			room.Renew(dur)
+			u.Data["json"] = "ok"
+		}
+	}
+	u.ServeJSON()
+}
+
 // @Title Delete Room
 // @Description delete room
 // @Param	token		query 	string	true		"The token for user"

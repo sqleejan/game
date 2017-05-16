@@ -7,8 +7,6 @@ import (
 	"sync"
 	"time"
 
-	"strconv"
-
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -28,12 +26,13 @@ const (
 )
 
 type Room struct {
-	id     string
-	name   string
-	active bool
-	users  map[string]*Player
-	water  int
-	base   int
+	id       string
+	name     string
+	active   bool
+	users    map[string]*Player
+	water    int
+	base     int
+	describe string
 	// assistantSum int
 	// assistantNum int
 	admin        string
@@ -183,6 +182,7 @@ func (r *Room) Convert() *RoomRespone {
 			RedCountUp:   r.RedCountUp,
 			Timeout:      r.Timeout,
 			ScoreLimit:   r.ScoreLimit,
+			Describe:     r.Describe,
 		},
 	}
 }
@@ -262,6 +262,7 @@ func CreateRoom(req *RoomReq) (*Room, error) {
 			RedUp:        req.RedUp,
 			ScoreLimit:   req.ScoreLimit,
 			Timeout:      req.Timeout,
+			Describe:     req.Describe,
 		},
 	}
 
@@ -295,6 +296,7 @@ type Scope struct {
 	RedCountUp   int     `db:"redcount_up"`
 	Timeout      int     `db:"timeout"`
 	ScoreLimit   int     `db:"score_limit"`
+	Describe     string  `db:"describe"`
 }
 
 func (r *Room) Config(req *RoomConfig) error {
@@ -313,6 +315,7 @@ func (r *Room) Config(req *RoomConfig) error {
 	r.RedUp = req.RedUp
 	r.Timeout = req.Timeout
 	r.ScoreLimit = req.ScoreLimit
+	r.Describe = req.Describe
 
 	return r.Update()
 }
@@ -482,14 +485,16 @@ func (r *Room) ActiveUser(openid string, req *UserActiveReq) error {
 					count++
 				}
 			}
-			cemsdk.SendMessage("admin", "chatgroups", []string{r.id}, map[string]string{
-				"type": "txt",
-				"msg":  fmt.Sprintf("当前玩家数 %d", count),
-			}, map[string]string{})
-			cemsdk.SendMessage("admin", "chatgroups", []string{r.id}, map[string]string{
-				"type": "txt",
-				"msg":  fmt.Sprintf("玩家%s 加入房间", player.NicName),
-			}, map[string]string{})
+			// cemsdk.SendMessage("admin", "chatgroups", []string{r.id}, map[string]string{
+			// 	"type": "txt",
+			// 	"msg":  fmt.Sprintf("当前玩家数 %d", count),
+			// }, map[string]string{})
+			// cemsdk.SendMessage("admin", "chatgroups", []string{r.id}, map[string]string{
+			// 	"type": "txt",
+			// 	"msg":  fmt.Sprintf("玩家%s 加入房间", player.NicName),
+			// }, map[string]string{})
+			emsay(r.id, fmt.Sprintf(`{"user":"%s","num":%d}`, player.NicName, count))
+			emsay2user(openid, `{"active":1}`)
 
 		} else {
 			if player.Active != req.Active {
@@ -499,7 +504,7 @@ func (r *Room) ActiveUser(openid string, req *UserActiveReq) error {
 				}
 			}
 			player.Active = false
-
+			emsay2user(openid, `{"active":0}`)
 		}
 		return nil
 
@@ -507,6 +512,22 @@ func (r *Room) ActiveUser(openid string, req *UserActiveReq) error {
 
 	return fmt.Errorf("room is disable")
 
+}
+
+func (r *Room) Renew(dur int) {
+	if dur == 0 {
+		return
+	}
+	r.locker.Lock()
+	defer r.locker.Unlock()
+	now := time.Now()
+	if r.endTime.Before(now) {
+		r.endTime = now.Add(time.Hour * time.Duration(dur))
+	} else {
+		r.endTime = r.endTime.Add(time.Hour * time.Duration(dur))
+	}
+	r.active = true
+	return
 }
 
 func (r *Room) Assistant(uid string, role int) error {
@@ -525,7 +546,7 @@ func (r *Room) Assistant(uid string, role int) error {
 			return fmt.Errorf("%s is not in Room: %s", uid, r.id)
 		}
 		r.users[uid].Role = role
-		emsay2user(uid, "room:"+r.id+" role:"+strconv.Itoa(role))
+		emsay2user(uid, fmt.Sprintf(`{"room":"%s","role":%d}`, r.id, role))
 		return nil
 	}
 	return fmt.Errorf("room is disable")
@@ -1010,13 +1031,38 @@ func niu(score int) int {
 	return (b + c) % 10
 }
 
+func abs(x int64) int64 {
+	if x >= 0 {
+		return x
+	}
+	return -x
+}
+
 func Clear() {
 	for _, room := range RoomList {
+
 		if !room.Active() {
 			if room.endTime.Before(room.startTime.Add(time.Since(room.endTime))) {
 				room.Close()
 				room.DeleteDB()
 			}
+		} else {
+			now := time.Now().Unix()
+			end := room.endTime.Unix()
+			late := end - now
+
+			if abs(late-1800) <= 2 { //30分钟
+				emsay(room.id, `{"late":30}`)
+			} else if abs(late-1200) <= 2 { //20分钟
+				emsay(room.id, `{"late":20}`)
+			} else if abs(late-600) <= 2 { //10分钟
+				emsay(room.id, `{"late":10}`)
+			} else if abs(late-300) <= 2 { //5分钟
+				emsay(room.id, `{"late":5}`)
+			} else if abs(late-60) <= 2 { //1分钟
+				emsay(room.id, `{"late":1}`)
+			}
+
 		}
 	}
 }
@@ -1024,7 +1070,7 @@ func Clear() {
 func init() {
 
 	go func() {
-		tricker := time.NewTicker(time.Second * 30)
+		tricker := time.NewTicker(time.Second * 3)
 
 		for {
 			<-tricker.C

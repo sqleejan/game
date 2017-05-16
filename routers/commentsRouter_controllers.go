@@ -162,6 +162,13 @@ func init() {
 
 	beego.GlobalControllerRouter["game/controllers:RoomController"] = append(beego.GlobalControllerRouter["game/controllers:RoomController"],
 		beego.ControllerComments{
+			Method: "Renew",
+			Router: `/:roomid/renew`,
+			AllowHTTPMethods: []string{"post"},
+			Params: nil})
+
+	beego.GlobalControllerRouter["game/controllers:RoomController"] = append(beego.GlobalControllerRouter["game/controllers:RoomController"],
+		beego.ControllerComments{
 			Method: "DeleteRoom",
 			Router: `/:roomid`,
 			AllowHTTPMethods: []string{"delete"},

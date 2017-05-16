@@ -773,6 +773,47 @@
                 }
             }
         },
+        "/room/{roomid}/renew": {
+            "post": {
+                "tags": [
+                    "room"
+                ],
+                "description": "续房间",
+                "operationId": "RoomController.续房间",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "token",
+                        "description": "The token for user",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "duration",
+                        "description": "房间延续时间",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    {
+                        "in": "path",
+                        "name": "roomid",
+                        "description": "The id for room",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{string} ok"
+                    },
+                    "403": {
+                        "description": ":roomid is empty"
+                    }
+                }
+            }
+        },
         "/user/active": {
             "post": {
                 "tags": [
@@ -1153,6 +1194,9 @@
                     "type": "integer",
                     "format": "int64"
                 },
+                "Describe": {
+                    "type": "string"
+                },
                 "EndTime": {
                     "type": "string",
                     "format": "string"
@@ -1225,6 +1269,9 @@
                     "type": "integer",
                     "format": "int64"
                 },
+                "Describe": {
+                    "type": "string"
+                },
                 "RedCountDown": {
                     "type": "integer",
                     "format": "int64"
@@ -1270,6 +1317,9 @@
                 "CountUp": {
                     "type": "integer",
                     "format": "int64"
+                },
+                "Describe": {
+                    "type": "string"
                 },
                 "Duration": {
                     "type": "integer",
