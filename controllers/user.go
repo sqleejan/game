@@ -123,7 +123,7 @@ func (u *UserController) Score() {
 		u.CustomAbort(500, "the room is not exist")
 		return
 	} else {
-		if !room.IsAdmin(mc.Id) {
+		if !room.IsAdmin(mc.Id) && !room.IsFinace(mc.Id) {
 			u.CustomAbort(408, "permission is not allow!")
 			return
 		}
@@ -219,23 +219,27 @@ func (u *UserController) GetSelf() {
 		return
 	}
 	mc.Audience = nicname
-	for k := range js {
-		room, ok := models.RoomList[k]
-		if !ok {
-			delete(js, k)
-			continue
-		}
-		if !room.Active() {
-			delete(js, k)
-		}
-	}
+
 	res := struct {
 		*auth.MyCustomClaims
-		Roles map[string]int `json:roles`
+		Roles []*models.SelfObj `json:roles`
 	}{
 		MyCustomClaims: mc,
-		Roles:          js,
+		Roles:          []*models.SelfObj{},
 	}
+
+	for _, k := range js {
+		res.Roles = append(res.Roles, k)
+		// room, ok := models.RoomList[k]
+		// if !ok {
+		// 	delete(js, k)
+		// 	continue
+		// }
+		// if !room.Active() {
+		// 	delete(js, k)
+		// }
+	}
+
 	u.Data["json"] = res
 	u.ServeJSON()
 }

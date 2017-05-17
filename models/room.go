@@ -20,6 +20,7 @@ const (
 	Stat_Kongxian = iota
 	Stat_Qizhuang
 	Stat_Qiangzhuang
+	Stat_Keepzhuang
 	Stat_Conifgzhuang
 	Stat_Sendredpaper
 	Stat_Getredpaper
@@ -34,6 +35,7 @@ type Room struct {
 	base     int
 	describe string
 	duration int
+	superman bool
 	// assistantSum int
 	// assistantNum int
 	admin        string
@@ -50,6 +52,25 @@ type Room struct {
 	status       int
 	//	gainlimit    int
 	Scope
+}
+
+func (r *Room) reset() {
+	r.locker.Lock()
+	defer r.locker.Unlock()
+	r.redhatMaster = ""
+	r.hasRedhat = false
+	r.hasScore = false
+	r.results = map[string]*result{}
+	r.status = 0
+	r.superman = false
+}
+
+func (r *Room) Super(start bool) error {
+	if r.Active() {
+		r.superman = start
+		return nil
+	}
+	return fmt.Errorf("room is disbaled!")
 }
 
 type result struct {
@@ -137,6 +158,7 @@ type RoomRespone struct {
 	Users     map[string]*Player
 	Status    int
 	Isused    bool
+	Fly       bool
 	Scope
 }
 
@@ -154,6 +176,7 @@ type RoomResponeNoUsers struct {
 	ScoreSum  int
 	Status    int
 	Isused    bool
+	Fly       bool
 	Scope
 }
 
@@ -177,6 +200,7 @@ func (r *Room) Convert() *RoomRespone {
 		Users:     r.users,
 		Status:    r.status,
 		Isused:    r.startTime.IsZero(),
+		Fly:       r.superman,
 		Scope: Scope{
 			CountUp:      r.CountUp,
 			CountDown:    r.CountDown,
@@ -210,6 +234,7 @@ func (r *Room) ConvertNoUsers() *RoomResponeNoUsers {
 		ScoreSum:  sumScore,
 		Status:    r.status,
 		Isused:    r.startTime.IsZero(),
+		Fly:       r.superman,
 		Scope: Scope{
 			CountUp:      r.CountUp,
 			CountDown:    r.CountDown,
@@ -333,15 +358,18 @@ func (r *Room) Active() bool {
 	r.locker.Lock()
 	if r.duration != 0 || (!r.endTime.IsZero() && time.Now().Before(r.endTime)) {
 		r.active = true
-	}else{
-		r.active=false
+	} else {
+		r.active = false
 	}
 	r.locker.Unlock()
 	return r.active
 }
 
-func (r *Room)Cancle(){
+func (r *Room) Cancle() {
+
+	r.reset()
 	r.end()
+	emsay(r.id, "房间被注销")
 }
 
 func (r *Room) Close() {
@@ -354,6 +382,7 @@ func (r *Room) Close() {
 	// 	}
 	// }
 	delete(RoomList, r.id)
+	r.reset()
 	r.end()
 	go cemsdk.DelGroup(r.id)
 }
@@ -393,8 +422,6 @@ func (r *Room) IsFinace(uid string) bool {
 	}
 	return u.Role == Role_Finace && u.Active
 }
-
-Role_Finace
 
 func (r *Room) IsAnyone(uid string) bool {
 	u, ok := r.users[uid]
@@ -565,7 +592,7 @@ func (r *Room) Renew(dur int) {
 }
 
 func (r *Room) Assistant(uid string, role int) error {
-	if role > 1 {
+	if role == Role_Admin {
 		return fmt.Errorf("cant Understand the role %d", role)
 	}
 	if r.Active() {
@@ -576,7 +603,7 @@ func (r *Room) Assistant(uid string, role int) error {
 		// 	user.Rooms[r].Role = Role_Assistant
 		// }
 		_, ok := r.users[uid]
-		if !ok {
+		if !ok || r.users[uid].Role == Role_Admin {
 			return fmt.Errorf("%s is not in Room: %s", uid, r.id)
 		}
 		r.users[uid].Role = role
@@ -587,10 +614,12 @@ func (r *Room) Assistant(uid string, role int) error {
 }
 
 func (r *Room) start() {
+	r.locker.Lock()
 	now := time.Now()
 	r.startTime = now
 	r.endTime = now.Add(time.Duration(r.duration) * time.Hour)
 	r.duration = 0
+	r.locker.Unlock()
 	r.Update()
 }
 
@@ -602,10 +631,12 @@ func (r *Room) end() {
 	// 	r.endTime = time.Now()
 	// }
 	var zero time.Time
+	r.locker.Lock()
 	r.duration = 0
 	r.startTime = zero
 	r.endTime = zero
 	r.active = false
+	r.locker.Unlock()
 	r.Update()
 }
 
@@ -694,7 +725,21 @@ func (r *Room) MasterRedhat(master string) error {
 	return nil
 }
 
-func (r *Room) ConfigRedhat(rr *RedReq) error {
+func (r *Room) KeepZhuang(master string) error {
+	if !r.Active() {
+		return fmt.Errorf("the room is disable")
+	}
+	if r.redhatMaster != master {
+		return fmt.Errorf("you are not master!")
+	}
+	if r.status != Stat_Qiangzhuang {
+		return fmt.Errorf("the room stat is %d!", r.status)
+	}
+	r.status = Stat_Keepzhuang
+	return nil
+}
+
+func (r *Room) ConfigRedhat(rr *RedReq, cancel bool) error {
 	if !r.Active() {
 		return fmt.Errorf("the room is disable")
 	}
@@ -702,8 +747,12 @@ func (r *Room) ConfigRedhat(rr *RedReq) error {
 	// if !r.HaveRedhat() {
 	// 	return fmt.Errorf("have not redhat!")
 	// }
-	if r.status != Stat_Qiangzhuang {
+	if r.status != Stat_Keepzhuang {
 		return fmt.Errorf("the room stat is %d!", r.status)
+	}
+	if cancel {
+		r.status = Stat_Qiangzhuang
+		return nil
 	}
 	// if r.redhatMaster != master {
 	// 	return fmt.Errorf("master is %s!", r.redhatMaster)
@@ -807,7 +856,7 @@ func (r *Room) Diver(master string, req *DiverReq) (*Marks, error) {
 		bay:    req.Diver,
 	}
 	fmt.Println("score amount: %d", rd.amount)
-	GenerateScore(rd.amount, rd.count, r.score)
+	GenerateScore(rd.amount, rd.count, r.score, r.superman)
 	masterscore := <-r.score
 	response := []*result{&result{
 		custom: master,
@@ -995,7 +1044,19 @@ func Krand(size int, kind int) []byte {
 	return result
 }
 
-func GenerateScore(sum int, count int, score chan int) {
+func maxHead(is []int) {
+	max := 0
+	index := 0
+	for i := range is {
+		nc := niu(is[i])
+		if nc > max {
+			max = nc
+			index = i
+		}
+	}
+	is[0], is[index] = is[index], is[0]
+}
+func GenerateScore(sum int, count int, score chan int, is bool) {
 	s1 := rand.New(rand.NewSource(time.Now().Unix() + rand.Int63n(100)))
 	//s2 := rand.New(rand.NewSource(time.Now().Unix() - 100))
 	suarray := make([]int, count)
@@ -1014,6 +1075,9 @@ func GenerateScore(sum int, count int, score chan int) {
 		}
 	}
 	suarray[count-1] = sum
+	if is {
+		maxHead(suarray)
+	}
 	for i := 0; i < count; i++ {
 		fmt.Println("generate score: %d", suarray[i])
 		if i == count-1 {
@@ -1107,6 +1171,9 @@ func Clear() {
 				room.DeleteDB()
 			}
 		} else {
+			if room.endTime.IsZero() {
+				continue
+			}
 			now := time.Now().Unix()
 			end := room.endTime.Unix()
 			late := end - now

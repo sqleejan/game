@@ -35,6 +35,11 @@ func init() {
 				&controllers.CattleController{},
 			),
 		),
+		beego.NSNamespace("/fly",
+			beego.NSInclude(
+				&controllers.FlyController{},
+			),
+		),
 	)
 	beego.AddNamespace(ns)
 }

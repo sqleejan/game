@@ -242,6 +242,38 @@ func (u *RoomController) DeleteRoom() {
 	u.ServeJSON()
 }
 
+// @Title Cancle Room
+// @Description Cancle room
+// @Param	token		query 	string	true		"The token for user"
+// @Param	roomid		path 	string	true		"The roomid "
+// @Success 200 {string} ok
+// @Failure 403 :roomid is empty
+// @router /:roomid/cancle [post]
+func (u *RoomController) Cancle() {
+	token := u.GetString("token")
+	mc, err := auth.Parse(token)
+	if err != nil {
+		u.CustomAbort(405, err.Error())
+		return
+	}
+	if mc.Id != "admin" {
+		u.CustomAbort(408, "permission is not allow!")
+		return
+	}
+	roomid := u.GetString(":roomid")
+	if roomid != "" {
+		room, ok := models.RoomList[roomid]
+		if !ok {
+			u.CustomAbort(500, "the room is not exist")
+			return
+		} else {
+			room.Cancle()
+			u.Data["json"] = "ok"
+		}
+	}
+	u.ServeJSON()
+}
+
 // @Title Bill
 // @Description get bill for roomid
 // @Param	token		query 	string	true		"The token for user"

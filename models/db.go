@@ -8,6 +8,8 @@ import (
 
 	"strings"
 
+	"sort"
+
 	"gopkg.in/gorp.v1"
 )
 
@@ -79,7 +81,13 @@ func CreateDBUser(openid, nicname string) (string, error) {
 	u.NickName = ""
 	var trans *gorp.Transaction
 	trans, err = dBEngine.Begin()
-	defer CheckAndCommit(trans, err)
+	defer func() {
+		if err == nil {
+			trans.Commit()
+		} else {
+			trans.Rollback()
+		}
+	}()
 	err = u.Insert(trans)
 	if err != nil {
 		return "", err
@@ -131,6 +139,20 @@ func (r DBRecord) TableName() string {
 	return "record"
 }
 
+type sortRecord []*DBRecord
+
+func (s sortRecord) Less(i, j int) bool {
+	return s[i].CreatedAt.After(s[j].CreatedAt)
+}
+
+func (s sortRecord) Len() int {
+	return len(s)
+}
+
+func (s sortRecord) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+
 func (r *DBRecord) List(db gorp.SqlExecutor, page int, size int) (interface{}, error) {
 	list := []*DBRecord{}
 	query := fmt.Sprintf(`select * from %s where room_id = "%s"`, r.TableName(), r.RoomId)
@@ -139,6 +161,7 @@ func (r *DBRecord) List(db gorp.SqlExecutor, page int, size int) (interface{}, e
 	if err != nil {
 		return nil, err
 	}
+	sort.Sort(sortRecord(list))
 	resp := &struct {
 		Pagination
 		Data []*DBRecord `json:"data"`
@@ -197,6 +220,7 @@ type DBRoom struct {
 	Admin     string    `db:"admin"`
 	StartTime time.Time `db:"start_time"`
 	EndTime   time.Time `db:"end_time"`
+	Duration  int       `db:"duration"`
 	//	Describe  string    `db:"discrible"`
 	Scope
 }
@@ -262,6 +286,7 @@ func (r *Room) Insert() error {
 		Admin:     r.admin,
 		StartTime: r.startTime,
 		EndTime:   r.endTime,
+		Duration:  r.duration,
 		//		Describe:  r.describe,
 		Scope: Scope{
 			CountUp:      r.CountUp,
@@ -313,6 +338,7 @@ func (r *Room) Update() error {
 		Admin:     r.admin,
 		StartTime: r.startTime,
 		EndTime:   r.endTime,
+		Duration:  r.duration,
 		//		Describe:  r.describe,
 		Scope: Scope{
 			CountUp:      r.CountUp,
@@ -369,10 +395,14 @@ func (r *Room) Fetch() error {
 	r.Timeout = dbRoom.Timeout
 	r.ScoreLimit = dbRoom.ScoreLimit
 	r.Describe = dbRoom.Describe
+	r.duration = dbRoom.Duration
 	//	r.describe= dbRoom.Describe
 	r.users = make(map[string]*Player)
 	for _, u := range rlist {
 		r.users[u.Uid] = &u.Player
+	}
+	if p, ok := r.users[r.admin]; ok {
+		p.Role = Role_Admin
 	}
 	return nil
 
@@ -499,7 +529,7 @@ func RoomInit(db gorp.SqlExecutor) {
 	}
 }
 
-func CheckAndCommit(db *gorp.Transaction, err error) {
+func CheckAndCommit(db *gorp.Transaction, err *error) {
 	if err == nil {
 		db.Commit()
 	} else {

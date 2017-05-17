@@ -57,11 +57,41 @@ func (u *CattleController) Post() {
 	u.ServeJSON()
 }
 
+// @Title 占庄
+// @Description 占庄
+// @Param	token		query 	string	true		"The token for user"
+// @Param	roomid		query 	string	true		"The roomid for rancher"
+// @Success 200 {string} success
+// @router /keepz [get]
+func (u *CattleController) Keep() {
+	print("action:keepzhuang")
+	token := u.GetString("token")
+	mc, err := auth.Parse(token)
+	if err != nil {
+		u.CustomAbort(405, err.Error())
+		return
+	}
+	rid := u.GetString("roomid")
+	room, ok := models.RoomList[rid]
+	if !ok {
+		u.CustomAbort(500, "the room is not exist")
+		return
+	} else {
+		if err := room.KeepZhuang(mc.Id); err != nil {
+			u.CustomAbort(409, err.Error())
+			return
+		}
+	}
+	u.Data["json"] = "ok"
+	u.ServeJSON()
+}
+
 // @Title 配置庄
 // @Description config redhat
 // @Param	token		query 	string	true		"The token for user"
 // @Param	roomid		query 	string	true		"The roomid for rancher"
 // @Param	body		body 	models.RedReq	true		"body for rancher"
+// @Param	cancel		query 	bool	true		"cancle for rancher"
 // @Success 200 {string} success
 // @Failure 403 body is empty
 // @router /config [post]
@@ -77,6 +107,12 @@ func (u *CattleController) Config() {
 	// 	u.CustomAbort(405, "permission is not allow!")
 	// 	return
 	// }
+	cancel, err := u.GetBool("cancel", false)
+	if err != nil {
+		u.CustomAbort(407, err.Error())
+		return
+	}
+
 	rid := u.GetString("roomid")
 	room, ok := models.RoomList[rid]
 	if !ok {
@@ -93,7 +129,7 @@ func (u *CattleController) Config() {
 			u.CustomAbort(500, err.Error())
 			return
 		} else {
-			if err := room.ConfigRedhat(&req); err != nil {
+			if err := room.ConfigRedhat(&req, cancel); err != nil {
 				u.CustomAbort(500, err.Error())
 				return
 			} else {
@@ -131,7 +167,7 @@ func (u *CattleController) Master() {
 		u.CustomAbort(500, "the room is not exist")
 		return
 	} else {
-		if room.IsAdmin(mc.Id) || room.IsAssistant(mc.Id) {
+		if !room.IsCustom(mc.Id) {
 			u.CustomAbort(408, "permission is not allow!")
 			return
 		}

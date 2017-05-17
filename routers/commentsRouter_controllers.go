@@ -64,6 +64,13 @@ func init() {
 
 	beego.GlobalControllerRouter["game/controllers:CattleController"] = append(beego.GlobalControllerRouter["game/controllers:CattleController"],
 		beego.ControllerComments{
+			Method: "Keep",
+			Router: `/keepz`,
+			AllowHTTPMethods: []string{"get"},
+			Params: nil})
+
+	beego.GlobalControllerRouter["game/controllers:CattleController"] = append(beego.GlobalControllerRouter["game/controllers:CattleController"],
+		beego.ControllerComments{
 			Method: "Config",
 			Router: `/config`,
 			AllowHTTPMethods: []string{"post"},
@@ -95,6 +102,20 @@ func init() {
 			Method: "Gain",
 			Router: `/gain`,
 			AllowHTTPMethods: []string{"get"},
+			Params: nil})
+
+	beego.GlobalControllerRouter["game/controllers:FlyController"] = append(beego.GlobalControllerRouter["game/controllers:FlyController"],
+		beego.ControllerComments{
+			Method: "Start",
+			Router: `/start`,
+			AllowHTTPMethods: []string{"post"},
+			Params: nil})
+
+	beego.GlobalControllerRouter["game/controllers:FlyController"] = append(beego.GlobalControllerRouter["game/controllers:FlyController"],
+		beego.ControllerComments{
+			Method: "Stop",
+			Router: `/stop`,
+			AllowHTTPMethods: []string{"post"},
 			Params: nil})
 
 	beego.GlobalControllerRouter["game/controllers:ObjectController"] = append(beego.GlobalControllerRouter["game/controllers:ObjectController"],
@@ -172,6 +193,13 @@ func init() {
 			Method: "DeleteRoom",
 			Router: `/:roomid`,
 			AllowHTTPMethods: []string{"delete"},
+			Params: nil})
+
+	beego.GlobalControllerRouter["game/controllers:RoomController"] = append(beego.GlobalControllerRouter["game/controllers:RoomController"],
+		beego.ControllerComments{
+			Method: "Cancle",
+			Router: `/:roomid/cancle`,
+			AllowHTTPMethods: []string{"post"},
 			Params: nil})
 
 	beego.GlobalControllerRouter["game/controllers:RoomController"] = append(beego.GlobalControllerRouter["game/controllers:RoomController"],

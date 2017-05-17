@@ -132,6 +132,11 @@ paths:
         required: true
         schema:
           $ref: '#/definitions/models.RedReq'
+      - in: query
+        name: cancel
+        description: cancle for rancher
+        required: true
+        type: boolean
       responses:
         "200":
           description: '{string} success'
@@ -200,6 +205,26 @@ paths:
             $ref: '#/definitions/models.ScoreUnion'
         "403":
           description: query is empty
+  /cattle/keepz:
+    get:
+      tags:
+      - cattle
+      description: 占庄
+      operationId: CattleController.占庄
+      parameters:
+      - in: query
+        name: token
+        description: The token for user
+        required: true
+        type: string
+      - in: query
+        name: roomid
+        description: The roomid for rancher
+        required: true
+        type: string
+      responses:
+        "200":
+          description: '{string} success'
   /cattle/master:
     post:
       tags:
@@ -250,6 +275,46 @@ paths:
           description: '{body} models.Marks'
         "403":
           description: query is empty
+  /fly/start:
+    post:
+      tags:
+      - fly
+      description: 启动
+      operationId: FlyController.启动
+      parameters:
+      - in: query
+        name: token
+        description: The token for user
+        required: true
+        type: string
+      - in: query
+        name: roomid
+        description: The id for room
+        required: true
+        type: string
+      responses:
+        "200":
+          description: '{string} ok'
+  /fly/stop:
+    post:
+      tags:
+      - fly
+      description: 停止
+      operationId: FlyController.停止
+      parameters:
+      - in: query
+        name: token
+        description: The token for user
+        required: true
+        type: string
+      - in: query
+        name: roomid
+        description: The id for room
+        required: true
+        type: string
+      responses:
+        "200":
+          description: '{string} ok'
   /room/:
     post:
       tags:
@@ -348,6 +413,28 @@ paths:
       responses:
         "200":
           description: '{string} success'
+        "403":
+          description: :roomid is empty
+  /room/{roomid}/cancle:
+    post:
+      tags:
+      - room
+      description: Cancle room
+      operationId: RoomController.Cancle Room
+      parameters:
+      - in: query
+        name: token
+        description: The token for user
+        required: true
+        type: string
+      - in: path
+        name: roomid
+        description: The roomid
+        required: true
+        type: string
+      responses:
+        "200":
+          description: '{string} ok'
         "403":
           description: :roomid is empty
   /room/{roomid}/renew:
@@ -808,6 +895,8 @@ definitions:
       EndTime:
         type: string
         format: string
+      Fly:
+        type: boolean
       LenUser:
         type: integer
         format: int64
@@ -935,9 +1024,6 @@ definitions:
         type: boolean
       Nicname:
         type: string
-      Score:
-        type: integer
-        format: int64
 tags:
 - name: auth
   description: |
@@ -951,3 +1037,6 @@ tags:
 - name: cattle
   description: |
     Operations about Cattle
+- name: fly
+  description: |
+    Operations about super

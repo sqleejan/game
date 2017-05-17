@@ -47,6 +47,7 @@ type TmpRespone struct {
 	LenUser   int
 	ScoreSum  int
 	Status    int
+	Fly       bool
 	//Users        map[string]*Player
 	CountUp      int
 	CountDown    int

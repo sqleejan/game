@@ -5,8 +5,8 @@ import "sync"
 const (
 	Role_Custom = iota
 	Role_Assistant
-	Role_Finace
 	Role_Admin
+	Role_Finace
 )
 
 var (
@@ -76,8 +76,14 @@ func (u *User) AppendRoom(room *Room, role int) {
 	u.locker.Unlock()
 }
 
-func FetchUserInfo(uid string) (string, map[string]int, error) {
-	res := map[string]int{}
+type SelfObj struct {
+	RoomId   string `json:"room_id"`
+	RoomName string `json:"room_name"`
+	Role     int    `json:"role"`
+}
+
+func FetchUserInfo(uid string) (string, map[string]*SelfObj, error) {
+	res := map[string]*SelfObj{}
 
 	u, err := cemsdk.GetUser(uid)
 	if err != nil {
@@ -93,7 +99,11 @@ func FetchUserInfo(uid string) (string, map[string]int, error) {
 		if ok {
 			u, ok := room.users[uid]
 			if ok {
-				res[v.Groupid] = u.Role
+				res[v.Groupid] = &SelfObj{
+					RoomId: v.Groupid,
+					RoomName: room.name,
+					Role:u.Role,
+				}
 			}
 
 		}
