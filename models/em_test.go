@@ -18,7 +18,7 @@ type TmpClaims struct {
 
 func TestClient(t *testing.T) {
 
-	teints := []int{1, 2, 111, 19, 33}
+	teints := []int{1, 123, 111, 19, 33}
 	maxHead(teints)
 	fmt.Println(teints)
 	return

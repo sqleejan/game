@@ -15,7 +15,7 @@ type FlyController struct {
 // @Title 启动
 // @Description 启动
 // @Param	token		query 	string	true		"The token for user"
-// @Param	roomid		query 	string	true		"The id for room"
+// @Param	roomid		query 	int		true		"The id for room"
 // @Success 200 {string} ok
 // @router /start [post]
 func (f *FlyController) Start() {
@@ -29,7 +29,11 @@ func (f *FlyController) Start() {
 		f.CustomAbort(408, "permission is not allow!")
 		return
 	}
-	rid := f.GetString("roomid")
+	rid, err := f.GetInt("roomid", 0)
+	if err != nil {
+		f.CustomAbort(407, err.Error())
+		return
+	}
 	room, ok := models.RoomList[rid]
 	if !ok {
 		f.CustomAbort(500, "the room is not exist")
@@ -50,7 +54,7 @@ func (f *FlyController) Start() {
 // @Title 停止
 // @Description 停止
 // @Param	token		query 	string	true		"The token for user"
-// @Param	roomid		query 	string	true		"The id for room"
+// @Param	roomid		query 	int		true		"The id for room"
 // @Success 200 {string} ok
 // @router /stop [post]
 func (f *FlyController) Stop() {
@@ -64,7 +68,11 @@ func (f *FlyController) Stop() {
 		f.CustomAbort(408, "permission is not allow!")
 		return
 	}
-	rid := f.GetString("roomid")
+	rid, err := f.GetInt("roomid", 0)
+	if err != nil {
+		f.CustomAbort(407, err.Error())
+		return
+	}
 	room, ok := models.RoomList[rid]
 	if !ok {
 		f.CustomAbort(500, "the room is not exist")

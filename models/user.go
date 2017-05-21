@@ -77,37 +77,33 @@ func (u *User) AppendRoom(room *Room, role int) {
 }
 
 type SelfObj struct {
-	RoomId   string `json:"room_id"`
+	RoomId   int    `json:"room_id"`
 	RoomName string `json:"room_name"`
 	Role     int    `json:"role"`
+	Score    int    `json:"score"`
 }
 
-func FetchUserInfo(uid string) (string, map[string]*SelfObj, error) {
-	res := map[string]*SelfObj{}
+func FetchUserInfo(uid string) (string, map[int]*SelfObj, error) {
+	res := map[int]*SelfObj{}
 
 	u, err := cemsdk.GetUser(uid)
 	if err != nil {
 		return "", res, err
 	}
 
-	js, err := cemsdk.FetchGroupFromUserJoined(uid)
-	if err != nil {
-		return "", res, err
-	}
-	for _, v := range js.Data {
-		room, ok := RoomList[v.Groupid]
+	for rid, room := range RoomList {
+		u, ok := room.users[uid]
 		if ok {
-			u, ok := room.users[uid]
-			if ok {
-				res[v.Groupid] = &SelfObj{
-					RoomId: v.Groupid,
-					RoomName: room.name,
-					Role:u.Role,
-				}
+			res[rid] = &SelfObj{
+				RoomId:   rid,
+				RoomName: room.name,
+				Role:     u.Role,
+				Score:    u.Score,
 			}
-
 		}
+
 	}
+
 	return u.Nicname, res, nil
 }
 

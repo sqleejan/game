@@ -56,7 +56,7 @@ func (u *RoomController) Post() {
 // @Title ConfigRoom
 // @Description config room
 // @Param	body		body 	models.TmpRoomConfig	true		"body for room content"
-// @Param	roomid		query 	string	true		"The id for room"
+// @Param	roomid		query 	int		true		"The id for room"
 // @Param	token		query 	string	true		"The token for user"
 // @Success 200 {string} ok
 // @Failure 403 body is empty
@@ -76,8 +76,12 @@ func (u *RoomController) Config() {
 		//u.Data["json"] = err.Error()
 	}
 	print(req)
-	roomid := u.GetString("roomid")
-	if roomid != "" {
+	roomid, err := u.GetInt("roomid", 0)
+	if err != nil {
+		u.CustomAbort(407, err.Error())
+		return
+	}
+	if roomid != 0 {
 		room, ok := models.RoomList[roomid]
 		if !ok {
 			u.CustomAbort(500, "the room is not exist")
@@ -104,8 +108,9 @@ func (u *RoomController) Config() {
 // @Param	token		query 	string	true		"The token for user"
 // @Param	limit		query 	int		false		"The default is 20"
 // @Param	page		query 	int		false		"The default is 1"
+// @Param	body		body 	models.ListReq	true		"body for list content"
 // @Success 200 {object} models.TmpRespone
-// @router /list [get]
+// @router /list [post]
 func (u *RoomController) GetAll() {
 	token := u.GetString("token")
 	_, err := auth.Parse(token)
@@ -128,6 +133,17 @@ func (u *RoomController) GetAll() {
 		u.CustomAbort(407, err.Error())
 		return
 	}
+
+	var lrq models.ListReq
+	err = json.Unmarshal(u.Ctx.Input.RequestBody, &lrq)
+	if err != nil {
+		u.CustomAbort(500, err.Error())
+		return
+		//u.Data["json"] = err.Error()
+	} else {
+		fmt.Println("len(roomlist)=", len(models.RoomList))
+		u.Data["json"] = models.RLConvert(models.RoomList).Convert(&lrq, page, limit)
+	}
 	// rooms := []interface{}{}
 	// for _, r := range models.RoomList {
 	// 	if r.Active() {
@@ -135,14 +151,13 @@ func (u *RoomController) GetAll() {
 	// 	}
 	// }
 
-	u.Data["json"] = models.RLConvert(models.RoomList).Convert(page, limit)
 	u.ServeJSON()
 }
 
 // @Title Get
 // @Description get user by roomid
 // @Param	token		query 	string	true		"The token for user"
-// @Param	roomid		path 	string	true		"The key for staticblock"
+// @Param	roomid		path 	int		true		"The key for staticblock"
 // @Success 200 {object} models.TmpRespone
 // @Failure 403 :roomid is empty
 // @router /:roomid [get]
@@ -153,8 +168,13 @@ func (u *RoomController) Get() {
 		u.CustomAbort(405, err.Error())
 		return
 	}
-	roomid := u.GetString(":roomid")
-	if roomid != "" {
+	roomid, err := u.GetInt(":roomid", 0)
+	if err != nil {
+		u.CustomAbort(407, err.Error())
+		return
+	}
+
+	if roomid != 0 {
 		room, ok := models.RoomList[roomid]
 		if !ok {
 			u.CustomAbort(500, "the room is not exist")
@@ -165,6 +185,44 @@ func (u *RoomController) Get() {
 				return
 			}
 			print(room.Convert())
+			u.Data["json"] = room.Convert()
+		}
+	}
+	u.ServeJSON()
+}
+
+// @Title 激活
+// @Description 激活
+// @Param	token		query 	string	true		"The token for user"
+// @Param	roomid		query 	int		true		"The id for room"
+// @Success 200 {bool} success
+// @router /active [get]
+func (u *RoomController) SetActive() {
+	fmt.Println("-----------------------------")
+	token := u.GetString("token")
+	mc, err := auth.Parse(token)
+	if err != nil {
+		u.CustomAbort(405, err.Error())
+		return
+	}
+	roomid, err := u.GetInt("roomid", 0)
+	if err != nil {
+		u.CustomAbort(407, err.Error())
+		return
+	}
+	fmt.Println("roomid=", roomid)
+	if roomid != 0 {
+		room, ok := models.RoomList[roomid]
+		if !ok {
+			u.CustomAbort(500, "the room is not exist")
+			return
+		} else {
+			if mc.Id != "admin" {
+				u.CustomAbort(408, "permission is not allow!")
+				return
+			}
+			//print(room.Convert())
+			room.SetActive()
 			u.Data["json"] = room.Convert()
 		}
 	}
@@ -191,8 +249,12 @@ func (u *RoomController) Renew() {
 		u.CustomAbort(407, "duration format is wrong!")
 		return
 	}
-	roomid := u.GetString(":roomid")
-	if roomid != "" {
+	roomid, err := u.GetInt(":roomid", 0)
+	if err != nil {
+		u.CustomAbort(407, err.Error())
+		return
+	}
+	if roomid != 0 {
 		room, ok := models.RoomList[roomid]
 		if !ok {
 			u.CustomAbort(500, "the room is not exist")
@@ -212,7 +274,7 @@ func (u *RoomController) Renew() {
 // @Title Delete Room
 // @Description delete room
 // @Param	token		query 	string	true		"The token for user"
-// @Param	roomid		path 	string	true		"The roomid "
+// @Param	roomid		path 	int		true		"The roomid "
 // @Success 200 {string} ok
 // @Failure 403 :roomid is empty
 // @router /:roomid [delete]
@@ -227,14 +289,19 @@ func (u *RoomController) DeleteRoom() {
 		u.CustomAbort(408, "permission is not allow!")
 		return
 	}
-	roomid := u.GetString(":roomid")
-	if roomid != "" {
+	roomid, err := u.GetInt(":roomid", 0)
+	if err != nil {
+		u.CustomAbort(407, err.Error())
+		return
+	}
+	if roomid != 0 {
 		room, ok := models.RoomList[roomid]
 		if !ok {
 			u.CustomAbort(500, "the room is not exist")
 			return
 		} else {
 			room.Close()
+			delete(models.RoomList, roomid)
 			fmt.Println(room.DeleteDB())
 			u.Data["json"] = room.Convert()
 		}
@@ -245,7 +312,7 @@ func (u *RoomController) DeleteRoom() {
 // @Title Cancle Room
 // @Description Cancle room
 // @Param	token		query 	string	true		"The token for user"
-// @Param	roomid		path 	string	true		"The roomid "
+// @Param	roomid		path 	int		true		"The roomid "
 // @Success 200 {string} ok
 // @Failure 403 :roomid is empty
 // @router /:roomid/cancle [post]
@@ -260,8 +327,12 @@ func (u *RoomController) Cancle() {
 		u.CustomAbort(408, "permission is not allow!")
 		return
 	}
-	roomid := u.GetString(":roomid")
-	if roomid != "" {
+	roomid, err := u.GetInt(":roomid", 0)
+	if err != nil {
+		u.CustomAbort(407, err.Error())
+		return
+	}
+	if roomid != 0 {
 		room, ok := models.RoomList[roomid]
 		if !ok {
 			u.CustomAbort(500, "the room is not exist")
@@ -279,7 +350,7 @@ func (u *RoomController) Cancle() {
 // @Param	token		query 	string	true		"The token for user"
 // @Param	limit		query 	int		false		"The default is 20"
 // @Param	page		query 	int		false		"The default is 1"
-// @Param	roomid		path 	string	true		"The key for staticblock"
+// @Param	roomid		path 	int		true		"The key for staticblock"
 // @Success 200 {string} success
 // @Failure 403 :roomid is empty
 // @router /:roomid/bill [get]
@@ -290,7 +361,11 @@ func (u *RoomController) Bill() {
 		u.CustomAbort(405, err.Error())
 		return
 	}
-	roomid := u.GetString(":roomid")
+	roomid, err := u.GetInt(":roomid", 0)
+	if err != nil {
+		u.CustomAbort(407, err.Error())
+		return
+	}
 	page, err := u.GetInt("page", 1)
 	if err != nil {
 		u.CustomAbort(407, err.Error())
@@ -301,7 +376,7 @@ func (u *RoomController) Bill() {
 		u.CustomAbort(407, err.Error())
 		return
 	}
-	if roomid != "" {
+	if roomid != 0 {
 		room, ok := models.RoomList[roomid]
 		if !ok && mc.Id != "admin" {
 			u.CustomAbort(500, "the room is not exist")
@@ -366,7 +441,7 @@ func (u *RoomController) ListDB() {
 // @Description 申请房间
 // @Param	token		query 	string	true		"The token for user"
 // @Param	body		body 	models.DBRoomPost	true		"body for room content"
-// @Success 200 {string} ok
+// @Success 200 {string} name
 // @router /request [post]
 func (u *RoomController) Request() {
 	token := u.GetString("token")
@@ -375,7 +450,6 @@ func (u *RoomController) Request() {
 		u.CustomAbort(405, err.Error())
 		return
 	}
-
 	var req models.DBRoomPost
 	err = json.Unmarshal(u.Ctx.Input.RequestBody, &req)
 	if err != nil {
@@ -384,6 +458,7 @@ func (u *RoomController) Request() {
 		//u.Data["json"] = err.Error()
 	} else {
 		req.UserId = mc.Id
+		req.RoomName = models.GenerateName(mc.Id)
 		err = req.Insert()
 		if err != nil {
 			u.CustomAbort(500, err.Error())
@@ -391,7 +466,7 @@ func (u *RoomController) Request() {
 		}
 	}
 
-	u.Data["json"] = "ok"
+	u.Data["json"] = req.RoomName
 
 	u.ServeJSON()
 }

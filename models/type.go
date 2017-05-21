@@ -2,6 +2,15 @@ package models
 
 import "time"
 
+type ListReq struct {
+	Like   string `json:"like"`
+	Req    bool   `json:"req"`
+	IsUsed bool   `json:"is_used"`
+	Expire bool   `json:"expire"`
+	Active bool   `json:"active"`
+	Cancle bool   `json:"cancle"`
+}
+
 type TmpRoomReq struct {
 	Duration     int
 	UserId       string
@@ -9,6 +18,7 @@ type TmpRoomReq struct {
 	RoomName     string
 	Water        int
 	Base         int
+	Nickname     string
 	ScoreLimit   int
 	CountUp      int
 	CountDown    int
@@ -18,6 +28,7 @@ type TmpRoomReq struct {
 	RedCountUp   int
 	Timeout      int
 	Describe     string
+	RedInterval  int
 }
 
 type TmpRoomConfig struct {
@@ -32,6 +43,7 @@ type TmpRoomConfig struct {
 	Timeout      int
 	ScoreLimit   int
 	Describe     string
+	RedInterval  int
 }
 
 type TmpRespone struct {
@@ -41,13 +53,17 @@ type TmpRespone struct {
 	Water     int
 	Admin     string
 	Banker    string
+	CreateAt  time.Time
 	StartTime time.Time
 	EndTime   time.Time
+	ActiveAt  time.Time
 	Active    bool
 	LenUser   int
 	ScoreSum  int
 	Status    int
 	Fly       bool
+	Expire    bool
+	ReqStatus bool
 	//Users        map[string]*Player
 	CountUp      int
 	CountDown    int
@@ -58,4 +74,5 @@ type TmpRespone struct {
 	Timeout      int
 	ScoreLimit   int
 	Describe     string
+	RedInterval  int
 }

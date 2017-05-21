@@ -17,14 +17,21 @@ func init() {
 		beego.ControllerComments{
 			Method: "WXAuth",
 			Router: `/wx/login`,
-			AllowHTTPMethods: []string{"post"},
+			AllowHTTPMethods: []string{"get"},
 			Params: nil})
 
 	beego.GlobalControllerRouter["game/controllers:AuthController"] = append(beego.GlobalControllerRouter["game/controllers:AuthController"],
 		beego.ControllerComments{
 			Method: "WXCode",
 			Router: `/wx/code`,
-			AllowHTTPMethods: []string{"post"},
+			AllowHTTPMethods: []string{"get"},
+			Params: nil})
+
+	beego.GlobalControllerRouter["game/controllers:AuthController"] = append(beego.GlobalControllerRouter["game/controllers:AuthController"],
+		beego.ControllerComments{
+			Method: "Redi",
+			Router: `/wx/redirect`,
+			AllowHTTPMethods: []string{"get"},
 			Params: nil})
 
 	beego.GlobalControllerRouter["game/controllers:AuthController"] = append(beego.GlobalControllerRouter["game/controllers:AuthController"],
@@ -53,6 +60,13 @@ func init() {
 			Method: "Update",
 			Router: `/admin/update`,
 			AllowHTTPMethods: []string{"post"},
+			Params: nil})
+
+	beego.GlobalControllerRouter["game/controllers:AuthController"] = append(beego.GlobalControllerRouter["game/controllers:AuthController"],
+		beego.ControllerComments{
+			Method: "QRCode",
+			Router: `/qrcode.png`,
+			AllowHTTPMethods: []string{"get"},
 			Params: nil})
 
 	beego.GlobalControllerRouter["game/controllers:CattleController"] = append(beego.GlobalControllerRouter["game/controllers:CattleController"],
@@ -101,6 +115,13 @@ func init() {
 		beego.ControllerComments{
 			Method: "Gain",
 			Router: `/gain`,
+			AllowHTTPMethods: []string{"get"},
+			Params: nil})
+
+	beego.GlobalControllerRouter["game/controllers:CattleController"] = append(beego.GlobalControllerRouter["game/controllers:CattleController"],
+		beego.ControllerComments{
+			Method: "RedInfo",
+			Router: `/redinfo`,
 			AllowHTTPMethods: []string{"get"},
 			Params: nil})
 
@@ -171,13 +192,20 @@ func init() {
 		beego.ControllerComments{
 			Method: "GetAll",
 			Router: `/list`,
-			AllowHTTPMethods: []string{"get"},
+			AllowHTTPMethods: []string{"post"},
 			Params: nil})
 
 	beego.GlobalControllerRouter["game/controllers:RoomController"] = append(beego.GlobalControllerRouter["game/controllers:RoomController"],
 		beego.ControllerComments{
 			Method: "Get",
 			Router: `/:roomid`,
+			AllowHTTPMethods: []string{"get"},
+			Params: nil})
+
+	beego.GlobalControllerRouter["game/controllers:RoomController"] = append(beego.GlobalControllerRouter["game/controllers:RoomController"],
+		beego.ControllerComments{
+			Method: "SetActive",
+			Router: `/active`,
 			AllowHTTPMethods: []string{"get"},
 			Params: nil})
 

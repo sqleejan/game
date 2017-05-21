@@ -4,6 +4,9 @@ import (
 	"net/http"
 	"time"
 
+	"fmt"
+	"os"
+
 	"github.com/chanxuehong/wechat.v2/mp/oauth2"
 	authClient "github.com/chanxuehong/wechat.v2/oauth2"
 	"github.com/dgrijalva/jwt-go"
@@ -11,7 +14,7 @@ import (
 )
 
 var (
-	rootkey  = []byte("renmindemingyi")
+	rootkey  = []byte("wcx")
 	wxClient *authClient.Client
 )
 
@@ -61,24 +64,34 @@ func Parse(tokenString string) (*MyCustomClaims, error) {
 	}
 }
 
-func QRCode(rid string) ([]byte, error) {
-	return qrcode.Encode(CodeUrl(rid), qrcode.Medium, 256)
+func QRCode(rid int) ([]byte, error) {
+	return qrcode.Encode(loginURI+fmt.Sprintf("?roomid=%s", rid), qrcode.Medium, 256)
 }
 
-const (
-	appId       = ""
-	appSecret   = ""
-	redirectURI = "http://127.0.0.1:8080/v1/wx/code"
+var (
+	appId       = "wx9f85ad10c59fc23c"
+	appSecret   = "102576667f4d60f65c0d1405c8a04d4e"
+	loginURI    = "http://game.highlifes.com/v1/auth/wx/login"
+	redirectURI = "http://game.highlifes.com/v1/auth/wx/code"
 	scope       = "snsapi_userinfo"
 	state       = ""
 )
 
-func CodeUrl(rid string) string {
+func CodeUrl(rid int, ext bool) string {
 	// uri := redirectURI
 	// if rid != "" {
 	// 	uri = uri + "&roomid=" + rid
 	// }
-	return oauth2.AuthCodeURL(appId, redirectURI, scope, rid)
+	roomid := fmt.Sprintf("%d", rid)
+	red := ""
+	if ext {
+		red = oauth2.AuthExtURL(appId, redirectURI, scope, roomid)
+	} else {
+		red = oauth2.AuthCodeURL(appId, redirectURI, scope, roomid)
+	}
+
+	fmt.Println(red)
+	return red
 }
 
 func init() {
@@ -87,6 +100,16 @@ func init() {
 		Endpoint:   endpoint,
 		HttpClient: http.DefaultClient,
 	}
+	appid := os.Getenv("APPID")
+	appsecret := os.Getenv("APPSECRET")
+	fmt.Println(appid, "111"+appsecret)
+	if appid != "" {
+		appId = appid
+	}
+	if appsecret != "" {
+		appSecret = appsecret
+	}
+
 }
 
 func WXClaim(code string) (*MyCustomClaims, error) {

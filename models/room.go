@@ -1,8 +1,10 @@
 package models
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/rand"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -11,7 +13,7 @@ import (
 )
 
 var (
-	RoomList       = make(map[string]*Room)
+	RoomList       = make(map[int]*Room)
 	roomLock       sync.Mutex
 	RoomNamePrefix = "yoyo_"
 )
@@ -27,15 +29,19 @@ const (
 )
 
 type Room struct {
-	id       string
-	name     string
-	active   bool
-	users    map[string]*Player
-	water    int
-	base     int
-	describe string
-	duration int
-	superman bool
+	id        int
+	gid       string
+	name      string
+	active    bool
+	users     map[string]*Player
+	water     int
+	base      int
+	describe  string
+	duration  int
+	superman  bool
+	reqStatus bool
+	CreateAt  time.Time
+	ActiveAt  time.Time
 	// assistantSum int
 	// assistantNum int
 	admin        string
@@ -52,6 +58,15 @@ type Room struct {
 	status       int
 	//	gainlimit    int
 	Scope
+}
+
+func GetRIDFromName(name string) int {
+	for _, r := range RoomList {
+		if r.name == name {
+			return r.id
+		}
+	}
+	return 0
 }
 
 func (r *Room) reset() {
@@ -80,6 +95,7 @@ type result struct {
 }
 
 type Marks struct {
+	RedId   string
 	Master  string
 	Water   int
 	Results []Mark
@@ -91,7 +107,7 @@ type Mark struct {
 	Pay    int
 }
 
-func MakeReport(rs []*result) *Marks {
+func MakeReport(rs []*result, redid string) *Marks {
 	marks := []Mark{}
 	water := 0
 	for _, r := range rs {
@@ -104,7 +120,8 @@ func MakeReport(rs []*result) *Marks {
 	}
 
 	return &Marks{
-		Master:  marks[0].Custom,
+		RedId:   redid,
+		Master:  marks[len(rs)-1].Custom,
 		Water:   water,
 		Results: marks,
 	}
@@ -136,6 +153,7 @@ type RoomReq struct {
 	//AssistantNum int
 	Duration  int
 	UserId    string
+	Nickname  string
 	UserLimit int
 	RoomName  string
 	Water     int
@@ -143,64 +161,117 @@ type RoomReq struct {
 	Scope
 }
 
+type UserMark struct {
+	*Player
+	Uid string
+}
+
 type RoomRespone struct {
+	Id        int
 	RoomId    string
 	RoomName  string
 	Base      int
 	Water     int
 	Admin     string
 	Banker    string
-	StartTime time.Time
-	EndTime   time.Time
+	CreateAt  string
+	StartTime string
+	EndTime   string
+	ActiveAt  string
 	Active    bool
 	LenUser   int
 	ScoreSum  int
-	Users     map[string]*Player
+	Users     []UserMark
 	Status    int
 	Isused    bool
 	Fly       bool
+	Expire    bool
+	ReqStatus bool
+	LifeTime  int
 	Scope
 }
 
 type RoomResponeNoUsers struct {
+	Id        int
 	RoomId    string
 	RoomName  string
 	Base      int
 	Water     int
 	Admin     string
 	Banker    string
-	StartTime time.Time
-	EndTime   time.Time
+	CreateAt  string
+	StartTime string
+	EndTime   string
+	ActiveAt  string
 	Active    bool
 	LenUser   int
 	ScoreSum  int
 	Status    int
 	Isused    bool
 	Fly       bool
+	Expire    bool
+	ReqStatus bool
+	LifeTime  int
 	Scope
+}
+
+type sortUsers []UserMark
+
+func (su sortUsers) Less(i, j int) bool {
+	return su[i].Score > su[j].Score
+}
+
+func (su sortUsers) Len() int {
+	return len(su)
+}
+
+func (su sortUsers) Swap(i, j int) {
+	su[i], su[j] = su[j], su[i]
+}
+
+func timeFormat(t time.Time) string {
+	if t.IsZero() {
+		return ""
+	}
+	return t.Format("2006-01-02 15:04")
 }
 
 func (r *Room) Convert() *RoomRespone {
 	sumScore := 0
-	for _, u := range r.users {
+	users := []UserMark{}
+	for k, u := range r.users {
 		sumScore += u.Score
+		users = append(users, UserMark{
+			Player: r.users[k],
+			Uid:    k,
+		})
 	}
+	now := time.Now() //"2006-01-02 15:04:05
+	expired := !r.endTime.IsZero() && now.Add(time.Duration(30)*time.Minute).After(r.endTime)
+	sort.Sort(sortUsers(users))
+	lifetime := int(r.endTime.Sub(r.startTime).Hours()) + r.duration
 	return &RoomRespone{
-		RoomId:    r.id,
+		Id:        r.id,
+		RoomId:    r.gid,
 		RoomName:  r.name,
 		Base:      r.base,
 		Water:     r.water,
 		Admin:     r.admin,
 		Banker:    r.redhatMaster,
-		StartTime: r.startTime,
-		EndTime:   r.endTime,
+		StartTime: timeFormat(r.startTime),
+		EndTime:   timeFormat(r.endTime),
 		Active:    r.active,
 		LenUser:   len(r.users),
 		ScoreSum:  sumScore,
-		Users:     r.users,
+		Users:     users,
 		Status:    r.status,
-		Isused:    r.startTime.IsZero(),
+		Isused:    !r.startTime.IsZero(),
 		Fly:       r.superman,
+		Expire:    expired,
+		ReqStatus: r.reqStatus,
+		CreateAt:  timeFormat(r.CreateAt),
+		ActiveAt:  timeFormat(r.ActiveAt),
+		LifeTime:  lifetime,
 		Scope: Scope{
 			CountUp:      r.CountUp,
 			CountDown:    r.CountDown,
@@ -211,6 +282,7 @@ func (r *Room) Convert() *RoomRespone {
 			Timeout:      r.Timeout,
 			ScoreLimit:   r.ScoreLimit,
 			Describe:     r.Describe,
+			RedInterval:  r.RedInterval,
 		},
 	}
 }
@@ -220,21 +292,31 @@ func (r *Room) ConvertNoUsers() *RoomResponeNoUsers {
 	for _, u := range r.users {
 		sumScore += u.Score
 	}
+
+	now := time.Now()
+	expired := !r.endTime.IsZero() && now.Add(time.Duration(30)*time.Minute).After(r.endTime)
+	lifetime := int(r.endTime.Sub(r.startTime).Hours()) + r.duration
 	return &RoomResponeNoUsers{
-		RoomId:    r.id,
+		Id:        r.id,
+		RoomId:    r.gid,
 		RoomName:  r.name,
 		Base:      r.base,
 		Water:     r.water,
 		Admin:     r.admin,
 		Banker:    r.redhatMaster,
-		StartTime: r.startTime,
-		EndTime:   r.endTime,
+		StartTime: timeFormat(r.startTime),
+		EndTime:   timeFormat(r.endTime),
 		Active:    r.active,
 		LenUser:   len(r.users),
 		ScoreSum:  sumScore,
 		Status:    r.status,
-		Isused:    r.startTime.IsZero(),
+		Isused:    !r.startTime.IsZero(),
 		Fly:       r.superman,
+		ReqStatus: r.reqStatus,
+		Expire:    expired,
+		CreateAt:  timeFormat(r.CreateAt),
+		ActiveAt:  timeFormat(r.ActiveAt),
+		LifeTime:  lifetime,
 		Scope: Scope{
 			CountUp:      r.CountUp,
 			CountDown:    r.CountDown,
@@ -244,6 +326,7 @@ func (r *Room) ConvertNoUsers() *RoomResponeNoUsers {
 			RedCountUp:   r.RedCountUp,
 			Timeout:      r.Timeout,
 			ScoreLimit:   r.ScoreLimit,
+			RedInterval:  r.RedInterval,
 		},
 	}
 }
@@ -268,22 +351,25 @@ func CreateRoom(req *RoomReq) (*Room, error) {
 	// })
 	//roomid := string(Krand(8, 1))
 	//now := time.Now()
+
+	var zero time.Time
 	room := &Room{
-		id:       gid,
-		active:   true,
-		base:     req.Base,
-		users:    make(map[string]*Player),
-		admin:    req.UserId,
-		duration: req.Duration,
+		gid:       gid,
+		active:    false,
+		reqStatus: true,
+		base:      req.Base,
+		users:     make(map[string]*Player),
+		admin:     req.UserId,
+		duration:  req.Duration,
+		CreateAt:  time.Now(),
 		// assistantSum: req.AssistantNum,
 		// assistantNum: 0,
-		//startTime: now,
-		//endTime:   now.Add(time.Duration(req.Duration) * time.Hour),
-		redhats: make(chan *redhat, 10),
-		echo:    make(chan *result),
-		results: make(map[string]*result),
-		water:   req.Water,
-		name:    req.RoomName,
+		startTime: zero,
+		endTime:   zero,
+		redhats:   make(chan *redhat, 10),
+		echo:      make(chan *result),
+		results:   make(map[string]*result),
+		water:     req.Water,
 		Scope: Scope{
 			CountDown:    req.CountDown,
 			CountUp:      req.CountUp,
@@ -303,11 +389,19 @@ func CreateRoom(req *RoomReq) (*Room, error) {
 		Score:  0,
 	}
 	room.users[req.UserId] = adminPlayer
-	if err := room.Insert(); err != nil {
+	roomid, err := room.Insert()
+	if err != nil {
 		cemsdk.DelGroup(gid)
+		fmt.Println(err)
+		return nil, err
 	}
+
+	room.id = roomid
+	room.name = fmt.Sprintf("%s的 %d房间", req.Nickname, roomid)
+	fmt.Println(room.Update())
 	roomLock.Lock()
-	RoomList[gid] = room
+	RoomList[roomid] = room
+	fmt.Println("len(roomlist)=", len(RoomList))
 	roomLock.Unlock()
 	return room, nil
 }
@@ -328,6 +422,7 @@ type Scope struct {
 	Timeout      int     `db:"timeout"`
 	ScoreLimit   int     `db:"score_limit"`
 	Describe     string  `db:"describe"`
+	RedInterval  int     `db:"red_interval"`
 }
 
 func (r *Room) Config(req *RoomConfig) error {
@@ -347,7 +442,7 @@ func (r *Room) Config(req *RoomConfig) error {
 	r.Timeout = req.Timeout
 	r.ScoreLimit = req.ScoreLimit
 	r.Describe = req.Describe
-
+	r.RedInterval = req.RedInterval
 	return r.Update()
 }
 
@@ -365,11 +460,21 @@ func (r *Room) Active() bool {
 	return r.active
 }
 
+func (r *Room) SetActive() {
+	fmt.Println(r.active, r.reqStatus)
+	r.active = true
+	r.reqStatus = false
+	r.ActiveAt = time.Now()
+	r.Update()
+}
+
 func (r *Room) Cancle() {
 
-	r.reset()
-	r.end()
-	emsay(r.id, "房间被注销")
+	// r.reset()
+	// r.end()
+	r.active = false
+	closeRoom <- struct{}{}
+	emsay(r.gid, `{"type":"msg","msg":"房间已被管理员注销"}`)
 }
 
 func (r *Room) Close() {
@@ -381,10 +486,11 @@ func (r *Room) Close() {
 	// 		userLock.Unlock()
 	// 	}
 	// }
-	delete(RoomList, r.id)
+	//delete(RoomList, r.id)
 	r.reset()
 	r.end()
-	go cemsdk.DelGroup(r.id)
+	emsay(r.gid, `{"type":"msg","msg":"房间已过期"}`)
+	//go cemsdk.DelGroup(r.gid)
 }
 
 func (r *Room) IsAdmin(uid string) bool {
@@ -486,7 +592,9 @@ func (r *Room) ModifyScore(openid string, score int) error {
 }
 
 func (r *Room) ActiveUser(openid string, req *UserActiveReq) error {
-
+	if r.admin == openid {
+		return fmt.Errorf("uid %s is room master", openid)
+	}
 	if r.Active() {
 		player, ok := r.users[openid]
 		if !ok {
@@ -498,10 +606,10 @@ func (r *Room) ActiveUser(openid string, req *UserActiveReq) error {
 			var err error
 
 			if player.Active != req.Active {
-				errt := cemsdk.AddUserToGroup(r.id, openid)
+				errt := cemsdk.AddUserToGroup(r.gid, openid)
 				defer func() {
 					if err != nil {
-						cemsdk.DelUserFromGroup(r.id, openid)
+						cemsdk.DelUserFromGroup(r.gid, openid)
 					}
 				}()
 				if errt != nil && !strings.Contains(errt.Error(), "already in group") {
@@ -548,12 +656,12 @@ func (r *Room) ActiveUser(openid string, req *UserActiveReq) error {
 			// 	"type": "txt",
 			// 	"msg":  fmt.Sprintf("玩家%s 加入房间", player.NicName),
 			// }, map[string]string{})
-			emsay(r.id, fmt.Sprintf(`[{"type":"join"},{"user":"%s"},{"num":%d}]`, player.NicName, count))
+			emsay(r.gid, fmt.Sprintf(`[{"type":"join"},{"user":"%s"},{"num":%d}]`, player.NicName, count))
 			emsay2user(openid, `[{"type":"active"},{"active":1}]`)
 
 		} else {
 			if player.Active != req.Active {
-				err := cemsdk.DelUserFromGroup(r.id, openid)
+				err := cemsdk.DelUserFromGroup(r.gid, openid)
 				if err != nil {
 					return nil
 				}
@@ -582,12 +690,18 @@ func (r *Room) Renew(dur int) {
 	// 	r.endTime = r.endTime.Add(time.Hour * time.Duration(dur))
 	// }
 	// r.active = true
-	if r.Active() {
+	if r.Active() && !r.endTime.IsZero() && time.Now().Before(r.endTime) {
+
 		r.endTime = r.endTime.Add(time.Hour * time.Duration(dur))
+		r.Update()
+
 	} else {
-		r.duration = dur
-		r.active = true
+		r.duration = r.duration + dur
+		// r.active = true
+		// r.reqStatus = false
+		r.SetActive()
 	}
+
 	return
 }
 
@@ -718,10 +832,11 @@ func (r *Room) MasterRedhat(master string) error {
 	if u != nil {
 		nicname = u.Nicname
 	}
-	cemsdk.SendMessage("admin", "chatgroups", []string{r.id}, map[string]string{
-		"type": "txt",
-		"msg":  fmt.Sprintf("%s[%s] 抢到庄家", nicname, master),
-	}, map[string]string{})
+	// cemsdk.SendMessage("admin", "chatgroups", []string{r.id}, map[string]string{
+	// 	"type": "txt",
+	// 	"msg":  fmt.Sprintf("%s[%s] 抢到庄家", nicname, master),
+	// }, map[string]string{})
+	emsay(r.gid, fmt.Sprintf(`{"type":"message","msg":"%s[%s] 抢到庄家.请点击连庄按钮配置连庄次数..."}`, nicname, master))
 	return nil
 }
 
@@ -809,7 +924,7 @@ func (r *Room) Discard() error {
 	}
 	r.scoreClear()
 	r.redhatClear()
-	emsay(r.id, "庄家弃庄")
+	emsay(r.gid, "庄家弃庄")
 	return nil
 }
 
@@ -822,6 +937,7 @@ func (r *Room) Diver(master string, req *DiverReq) (*Marks, error) {
 	// if !r.HaveRedhat() {
 	// 	return nil, fmt.Errorf("have not redhat!")
 	// }
+
 	if r.status != Stat_Conifgzhuang {
 		return nil, fmt.Errorf("the room stat is %d!", r.status)
 	}
@@ -846,49 +962,93 @@ func (r *Room) Diver(master string, req *DiverReq) (*Marks, error) {
 	rd.amount = int(req.RedAmount * 100)
 	rd.count = req.Diver
 	r.score = make(chan int, rd.count+1)
-	close(r.echo)
+	if r.echo != nil {
+		close(r.echo)
+	}
 	r.echo = make(chan *result)
 
 	//传递信息给抢红的用户
+	r.results = make(map[string]*result)
 	r.results["000--"] = &result{
 		custom: master,
 		score:  rd.amount,
 		bay:    req.Diver,
 	}
-	fmt.Println("score amount: %d", rd.amount)
+	redid := string(Krand(8, 3))
+	r.results["000-+"] = &result{
+		custom: redid,
+	}
+	fmt.Printf("score amount=====: %d [%s]\n", rd.amount, r.id)
 	GenerateScore(rd.amount, rd.count, r.score, r.superman)
-	masterscore := <-r.score
-	response := []*result{&result{
-		custom: master,
-		score:  masterscore,
-	}}
+
+	// masterscore := <-r.score
+	// response := []*result{&result{
+	// 	custom: master,
+	// 	score:  masterscore,
+	// }}
+
+	emsay(r.gid, fmt.Sprintf(`{"type":"redhat","redid":%s,"master":%s,"amount":%v,"diver":%d}`, redid, master, req.RedAmount, req.RedAmount))
+	response := []*result{}
 	r.locker.Lock()
 	r.hasScore = true
 	r.locker.Unlock()
-
+	nowcount := 0
+	timecount := 0
+	//exitcount=int(rd.timeout.Seconds())*2
+	ticker := time.NewTicker(time.Second * 30)
+	//ot:=time.After(rd.timeout)
+	defer ticker.Stop()
 	for {
 		select {
-		case <-time.After(rd.timeout):
-			close(r.score)
-			// r.locker.Lock()
-			// r.hasScore = false
-			// r.locker.Unlock()
-			r.scoreClear()
-			r.redhats <- rd
-			return nil, fmt.Errorf("diver timeout!")
+		// case <-ot:
+		// 	if r.score != nil {
+		// 		close(r.score)
+		// 	}
+
+		// 	// r.locker.Lock()
+		// 	// r.hasScore = false
+		// 	// r.locker.Unlock()
+		// 	r.scoreClear()
+		// 	r.redhats <- rd
+		// 	//ticker.Stop()
+		// 	fmt.Println("==============diver timeout...==============")
+		// 	return nil, fmt.Errorf("diver timeout!")
+		case <-ticker.C:
+			timecount += 1
+			leave := rd.count - nowcount
+			ltime := int(rd.timeout.Seconds()) - 30*timecount
+			if ltime <= 0 {
+				if r.score != nil {
+					close(r.score)
+				}
+
+				// r.locker.Lock()
+				// r.hasScore = false
+				// r.locker.Unlock()
+				r.scoreClear()
+				r.redhats <- rd
+				//ticker.Stop()
+				emsay(r.gid, fmt.Sprintf(`{"type":"red","count":%d,"time": "红包超时"}`, leave))
+				fmt.Println("==============diver timeout ticker.C...==============")
+				return nil, fmt.Errorf("%s diver timeout!", redid)
+			}
+			emsay(r.gid, fmt.Sprintf(`{"type":"red","count":%d,"time": %d }`, leave, ltime))
+
 		case rs := <-r.echo:
+			nowcount += 1
 			if rs != nil {
 				if rs.score < 0 {
 
 					rs.score = -rs.score
 					response = append(response, rs)
 					r.scoreClear()
-					r.juge(response, rd.base, r.water)
-					reports := MakeReport(response)
-					Record(r.id, r.name, r.admin, reports)
+					res := r.juge(response, rd.base, r.water, r.redhatMaster)
+					reports := MakeReport(res, redid)
+					print(reports)
+					Record(r.id, r.name, r.admin, reports, reports.Water)
 					if rd.end {
 						r.redhatClear()
-						emsay(r.id, "本轮坐庄结束")
+						emsay(r.gid, `{"type":"message","msg":"本轮坐庄结束"}`)
 					}
 					// nicname:=""
 					// um,ok1:=r.users[master]
@@ -926,6 +1086,7 @@ type ScoreUnion struct {
 	Score  float32
 	Amount float32
 	Count  int
+	RedId  string
 }
 
 func (r *Room) GetScore(custom string) (*ScoreUnion, error) {
@@ -954,6 +1115,11 @@ func (r *Room) GetScore(custom string) (*ScoreUnion, error) {
 	if r.users[custom].Score < r.ScoreLimit {
 		return nil, fmt.Errorf("your score is below the limit")
 	}
+	redid := ""
+	redresult, ok := r.results["000-+"]
+	if ok {
+		redid = redresult.custom
+	}
 	score := <-r.score
 
 	if score < 0 {
@@ -971,7 +1137,10 @@ func (r *Room) GetScore(custom string) (*ScoreUnion, error) {
 			res.Master = rt.custom
 			res.Count = rt.bay
 			res.Amount = float32(rt.score) / 100
+			res.RedId = redid
 		}
+
+		RedInsert(r.id, redid, custom, res.Score)
 		return res, nil
 		//return -score, nil
 	}
@@ -988,10 +1157,14 @@ func (r *Room) GetScore(custom string) (*ScoreUnion, error) {
 		res.Count = rt.bay
 		res.Amount = float32(rt.score) / 100
 	}
+	RedInsert(r.id, redid, custom, res.Score)
 	return res, nil
 
 }
 
+func (r *Room) NeedClean() bool {
+	return r.active == false && (r.duration != 0 || !r.endTime.IsZero())
+}
 func (r *Room) redhatClear() {
 	r.locker.Lock()
 	defer r.locker.Unlock()
@@ -1054,7 +1227,7 @@ func maxHead(is []int) {
 			index = i
 		}
 	}
-	is[0], is[index] = is[index], is[0]
+	is[len(is)-1], is[index] = is[index], is[len(is)-1]
 }
 func GenerateScore(sum int, count int, score chan int, is bool) {
 	s1 := rand.New(rand.NewSource(time.Now().Unix() + rand.Int63n(100)))
@@ -1079,7 +1252,7 @@ func GenerateScore(sum int, count int, score chan int, is bool) {
 		maxHead(suarray)
 	}
 	for i := 0; i < count; i++ {
-		fmt.Println("generate score: %d", suarray[i])
+		fmt.Printf("generate score: %d\n", suarray[i])
 		if i == count-1 {
 			score <- -suarray[i]
 		} else {
@@ -1091,31 +1264,31 @@ func GenerateScore(sum int, count int, score chan int, is bool) {
 
 }
 
-func (r *Room) juge(rs []*result, base int, water int) {
+func (r *Room) juge(rs []*result, base int, water int, master string) []*result {
 	length := len(rs)
 	if length < 2 {
-		return
+		return nil
 	}
-	begin := rs[0]
+	last := rs[length-1]
 	//begin.score = -begin.score
-	master := niu(begin.score)
+	masterscore := niu(last.score)
 	sum := 0
 	for i := range rs {
 
-		if i == 0 {
-			continue
+		if i == length-1 {
+			break
 		}
 
 		if rs[i].score < 0 {
 			rs[i].score = -rs[i].score
 		}
 		ba := niu(rs[i].score)
-		if ba < master {
-			rs[i].bay = -master * base
-			sum += master * base
+		if ba < masterscore {
+			rs[i].bay = -masterscore * base
+			sum += masterscore * base
 
 		}
-		if ba > master {
+		if ba > masterscore {
 			rs[i].bay = ba * base
 			sum -= ba * base
 		}
@@ -1123,9 +1296,17 @@ func (r *Room) juge(rs []*result, base int, water int) {
 		r.users[rs[i].custom].Update(r.id, rs[i].custom)
 		//rs[i].score = float32(rs[i].score) / 100
 	}
-	begin.bay = sum - water*len(rs)
-	r.users[begin.custom].Score += begin.bay
-	r.users[begin.custom].Update(r.id, begin.custom)
+	last.bay = 0
+	r.users[master].Score += sum - water*len(rs)
+	r.users[master].Update(r.id, master)
+
+	masterPlayer := &result{
+		custom: master,
+		score:  last.score,
+		bay:    sum - water*len(rs),
+	}
+	rs = append(rs, masterPlayer)
+	return rs
 	//last.score = float32(last.score) / 100
 }
 
@@ -1164,12 +1345,16 @@ func abs(x int64) int64 {
 
 func Clear() {
 	for _, room := range RoomList {
-
+		if room.reqStatus {
+			return
+		}
 		if !room.Active() {
-			if room.endTime.Before(room.startTime.Add(time.Since(room.endTime))) {
+			if room.NeedClean() {
 				room.Close()
-				room.DeleteDB()
 			}
+			//if room.endTime.Before(room.startTime.Add(time.Since(room.endTime))) {
+			//room.DeleteDB()
+			//}
 		} else {
 			if room.endTime.IsZero() {
 				continue
@@ -1179,20 +1364,22 @@ func Clear() {
 			late := end - now
 
 			if abs(late-1800) <= 2 { //30分钟
-				emsay(room.id, `{"late":30}`)
+				emsay(room.gid, `{"late":30}`)
 			} else if abs(late-1200) <= 2 { //20分钟
-				emsay(room.id, `{"late":20}`)
+				emsay(room.gid, `{"late":20}`)
 			} else if abs(late-600) <= 2 { //10分钟
-				emsay(room.id, `{"late":10}`)
+				emsay(room.gid, `{"late":10}`)
 			} else if abs(late-300) <= 2 { //5分钟
-				emsay(room.id, `{"late":5}`)
+				emsay(room.gid, `{"late":5}`)
 			} else if abs(late-60) <= 2 { //1分钟
-				emsay(room.id, `{"late":1}`)
+				emsay(room.gid, `{"late":1}`)
 			}
 
 		}
 	}
 }
+
+var closeRoom = make(chan struct{}, 5)
 
 func init() {
 
@@ -1200,8 +1387,12 @@ func init() {
 		tricker := time.NewTicker(time.Second * 3)
 
 		for {
-			<-tricker.C
-			Clear()
+			select {
+			case <-tricker.C:
+				Clear()
+			case <-closeRoom:
+				Clear()
+			}
 		}
 	}()
 	for i := 0; i < 3; i++ {
@@ -1221,6 +1412,7 @@ func init() {
 	}
 	adminInsert()
 	RoomInit(dBEngine)
+	fmt.Println("Init finished...")
 	// list, err := cemsdk.FetchAllGroupFromApp()
 	// if err != nil {
 	// 	panic(err)
@@ -1231,4 +1423,9 @@ func init() {
 	// 	}
 	// }
 
+}
+
+func print(js interface{}) {
+	bt, _ := json.MarshalIndent(js, "", " ")
+	fmt.Println("print:", string(bt))
 }

@@ -55,6 +55,29 @@
                 }
             }
         },
+        "/auth/qrcode.png": {
+            "get": {
+                "tags": [
+                    "auth"
+                ],
+                "description": "房间二维码",
+                "operationId": "AuthController.房间二维码",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "roomid",
+                        "description": "房间id",
+                        "type": "integer",
+                        "format": "int64"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{string} image"
+                    }
+                }
+            }
+        },
         "/auth/token": {
             "post": {
                 "tags": [
@@ -117,7 +140,7 @@
             }
         },
         "/auth/wx/code": {
-            "post": {
+            "get": {
                 "tags": [
                     "auth"
                 ],
@@ -128,7 +151,8 @@
                         "in": "query",
                         "name": "state",
                         "description": "房间ID",
-                        "type": "string"
+                        "type": "integer",
+                        "format": "int64"
                     },
                     {
                         "in": "query",
@@ -145,7 +169,7 @@
             }
         },
         "/auth/wx/login": {
-            "post": {
+            "get": {
                 "tags": [
                     "auth"
                 ],
@@ -156,6 +180,35 @@
                         "in": "query",
                         "name": "roomid",
                         "description": "房间ID",
+                        "type": "integer",
+                        "format": "int64"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{string} token"
+                    }
+                }
+            }
+        },
+        "/auth/wx/redirect": {
+            "get": {
+                "tags": [
+                    "auth"
+                ],
+                "description": "微信跳转",
+                "operationId": "AuthController.微信跳转",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "state",
+                        "description": "房间ID",
+                        "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "token",
+                        "description": "token",
                         "type": "string"
                     }
                 ],
@@ -186,7 +239,8 @@
                         "name": "roomid",
                         "description": "The roomid for rancher",
                         "required": true,
-                        "type": "string"
+                        "type": "integer",
+                        "format": "int64"
                     },
                     {
                         "in": "body",
@@ -235,7 +289,8 @@
                         "name": "roomid",
                         "description": "The roomid for rancher",
                         "required": true,
-                        "type": "string"
+                        "type": "integer",
+                        "format": "int64"
                     }
                 ],
                 "responses": {
@@ -265,7 +320,8 @@
                         "name": "roomid",
                         "description": "The roomid for rancher",
                         "required": true,
-                        "type": "string"
+                        "type": "integer",
+                        "format": "int64"
                     }
                 ],
                 "responses": {
@@ -295,7 +351,8 @@
                         "name": "roomid",
                         "description": "The roomid for cattle",
                         "required": true,
-                        "type": "string"
+                        "type": "integer",
+                        "format": "int64"
                     }
                 ],
                 "responses": {
@@ -330,7 +387,8 @@
                         "name": "roomid",
                         "description": "The roomid for rancher",
                         "required": true,
-                        "type": "string"
+                        "type": "integer",
+                        "format": "int64"
                     }
                 ],
                 "responses": {
@@ -360,7 +418,8 @@
                         "name": "roomid",
                         "description": "The roomid for rancher",
                         "required": true,
-                        "type": "string"
+                        "type": "integer",
+                        "format": "int64"
                     }
                 ],
                 "responses": {
@@ -369,6 +428,49 @@
                     },
                     "403": {
                         "description": "body is empty"
+                    }
+                }
+            }
+        },
+        "/cattle/redinfo": {
+            "get": {
+                "tags": [
+                    "cattle"
+                ],
+                "description": "红包信息",
+                "operationId": "CattleController.红包信息",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "token",
+                        "description": "The token for user",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "roomid",
+                        "description": "The roomid for cattle",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    {
+                        "in": "query",
+                        "name": "redid",
+                        "description": "The redid for cattle",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "schema": {
+                            "$ref": "#/definitions/models.DBRed"
+                        }
+                    },
+                    "403": {
+                        "description": "query is empty"
                     }
                 }
             }
@@ -393,7 +495,8 @@
                         "name": "roomid",
                         "description": "The roomid for cattle",
                         "required": true,
-                        "type": "string"
+                        "type": "integer",
+                        "format": "int64"
                     },
                     {
                         "in": "body",
@@ -435,7 +538,8 @@
                         "name": "roomid",
                         "description": "The id for room",
                         "required": true,
-                        "type": "string"
+                        "type": "integer",
+                        "format": "int64"
                     }
                 ],
                 "responses": {
@@ -465,7 +569,8 @@
                         "name": "roomid",
                         "description": "The id for room",
                         "required": true,
-                        "type": "string"
+                        "type": "integer",
+                        "format": "int64"
                     }
                 ],
                 "responses": {
@@ -512,6 +617,37 @@
                 }
             }
         },
+        "/room/active": {
+            "get": {
+                "tags": [
+                    "room"
+                ],
+                "description": "激活",
+                "operationId": "RoomController.激活",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "token",
+                        "description": "The token for user",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "roomid",
+                        "description": "The id for room",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int64"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{bool} success"
+                    }
+                }
+            }
+        },
         "/room/config": {
             "post": {
                 "tags": [
@@ -534,7 +670,8 @@
                         "name": "roomid",
                         "description": "The id for room",
                         "required": true,
-                        "type": "string"
+                        "type": "integer",
+                        "format": "int64"
                     },
                     {
                         "in": "query",
@@ -555,7 +692,7 @@
             }
         },
         "/room/list": {
-            "get": {
+            "post": {
                 "tags": [
                     "room"
                 ],
@@ -582,6 +719,15 @@
                         "description": "The default is 1",
                         "type": "integer",
                         "format": "int64"
+                    },
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "description": "body for list content",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ListReq"
+                        }
                     }
                 ],
                 "responses": {
@@ -657,7 +803,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "{string} ok"
+                        "description": "{string} name"
                     }
                 }
             }
@@ -777,7 +923,8 @@
                         "name": "roomid",
                         "description": "The key for staticblock",
                         "required": true,
-                        "type": "string"
+                        "type": "integer",
+                        "format": "int64"
                     }
                 ],
                 "responses": {
@@ -810,7 +957,8 @@
                         "name": "roomid",
                         "description": "The roomid",
                         "required": true,
-                        "type": "string"
+                        "type": "integer",
+                        "format": "int64"
                     }
                 ],
                 "responses": {
@@ -857,7 +1005,8 @@
                         "name": "roomid",
                         "description": "The key for staticblock",
                         "required": true,
-                        "type": "string"
+                        "type": "integer",
+                        "format": "int64"
                     }
                 ],
                 "responses": {
@@ -890,7 +1039,8 @@
                         "name": "roomid",
                         "description": "The roomid",
                         "required": true,
-                        "type": "string"
+                        "type": "integer",
+                        "format": "int64"
                     }
                 ],
                 "responses": {
@@ -964,7 +1114,8 @@
                         "name": "roomid",
                         "description": "The roomid for user",
                         "required": true,
-                        "type": "string"
+                        "type": "integer",
+                        "format": "int64"
                     },
                     {
                         "in": "query",
@@ -1013,7 +1164,8 @@
                         "name": "roomid",
                         "description": "The roomid for user",
                         "required": true,
-                        "type": "string"
+                        "type": "integer",
+                        "format": "int64"
                     },
                     {
                         "in": "query",
@@ -1061,7 +1213,8 @@
                         "name": "roomid",
                         "description": "The roomid for user",
                         "required": true,
-                        "type": "string"
+                        "type": "integer",
+                        "format": "int64"
                     }
                 ],
                 "responses": {
@@ -1093,7 +1246,8 @@
                         "name": "roomid",
                         "description": "The roomid for user",
                         "required": true,
-                        "type": "string"
+                        "type": "integer",
+                        "format": "int64"
                     }
                 ],
                 "responses": {
@@ -1126,7 +1280,8 @@
                         "name": "roomid",
                         "description": "The roomid for user",
                         "required": true,
-                        "type": "string"
+                        "type": "integer",
+                        "format": "int64"
                     },
                     {
                         "in": "query",
@@ -1185,6 +1340,34 @@
             "title": "MyCustomClaims",
             "type": "object"
         },
+        "models.DBRed": {
+            "title": "DBRed",
+            "type": "object",
+            "properties": {
+                "Id": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "UserId": {
+                    "type": "string"
+                },
+                "create_at": {
+                    "type": "string",
+                    "format": "string"
+                },
+                "red_id": {
+                    "type": "string"
+                },
+                "room_id": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "score": {
+                    "type": "number",
+                    "format": "float"
+                }
+            }
+        },
         "models.DBRoomPost": {
             "title": "DBRoomPost",
             "type": "object",
@@ -1205,6 +1388,9 @@
                 },
                 "nicname": {
                     "type": "string"
+                },
+                "room_name": {
+                    "type": "string"
                 }
             }
         },
@@ -1219,6 +1405,30 @@
                 "RedAmount": {
                     "type": "number",
                     "format": "float"
+                }
+            }
+        },
+        "models.ListReq": {
+            "title": "ListReq",
+            "type": "object",
+            "properties": {
+                "active": {
+                    "type": "boolean"
+                },
+                "cancle": {
+                    "type": "boolean"
+                },
+                "expire": {
+                    "type": "boolean"
+                },
+                "is_used": {
+                    "type": "boolean"
+                },
+                "like": {
+                    "type": "string"
+                },
+                "req": {
+                    "type": "boolean"
                 }
             }
         },
@@ -1261,6 +1471,9 @@
                     "format": "int64"
                 },
                 "Master": {
+                    "type": "string"
+                },
+                "RedId": {
                     "type": "string"
                 },
                 "Score": {
@@ -1306,6 +1519,10 @@
                 "Active": {
                     "type": "boolean"
                 },
+                "ActiveAt": {
+                    "type": "string",
+                    "format": "string"
+                },
                 "Admin": {
                     "type": "string"
                 },
@@ -1324,12 +1541,19 @@
                     "type": "integer",
                     "format": "int64"
                 },
+                "CreateAt": {
+                    "type": "string",
+                    "format": "string"
+                },
                 "Describe": {
                     "type": "string"
                 },
                 "EndTime": {
                     "type": "string",
                     "format": "string"
+                },
+                "Expire": {
+                    "type": "boolean"
                 },
                 "Fly": {
                     "type": "boolean"
@@ -1350,9 +1574,16 @@
                     "type": "number",
                     "format": "float"
                 },
+                "RedInterval": {
+                    "type": "integer",
+                    "format": "int64"
+                },
                 "RedUp": {
                     "type": "number",
                     "format": "float"
+                },
+                "ReqStatus": {
+                    "type": "boolean"
                 },
                 "RoomId": {
                     "type": "string"
@@ -1417,6 +1648,10 @@
                     "type": "number",
                     "format": "float"
                 },
+                "RedInterval": {
+                    "type": "integer",
+                    "format": "int64"
+                },
                 "RedUp": {
                     "type": "number",
                     "format": "float"
@@ -1458,6 +1693,9 @@
                     "type": "integer",
                     "format": "int64"
                 },
+                "Nickname": {
+                    "type": "string"
+                },
                 "RedCountDown": {
                     "type": "integer",
                     "format": "int64"
@@ -1469,6 +1707,10 @@
                 "RedDown": {
                     "type": "number",
                     "format": "float"
+                },
+                "RedInterval": {
+                    "type": "integer",
+                    "format": "int64"
                 },
                 "RedUp": {
                     "type": "number",

@@ -121,9 +121,10 @@ func GetToken(openid string) (string, error) {
 type DBRecord struct {
 	Id        int64     `db:"id","primarykey","autoincrement" json:"id"`
 	CreatedAt time.Time `db:"created_at" json:"created_at"`
-	RoomId    string    `db:"room_id" json:"room_id"`
+	RoomId    int       `db:"room_id" json:"room_id"`
 	RoomName  string    `db:"room_name" json:"room_name"`
 	Master    string    `db:"master" json:"master"`
+	Water     int       `db:"water" json:"water"`
 	Body      string    `db:"body" json:"body"`
 }
 
@@ -155,15 +156,20 @@ func (s sortRecord) Swap(i, j int) {
 
 func (r *DBRecord) List(db gorp.SqlExecutor, page int, size int) (interface{}, error) {
 	list := []*DBRecord{}
-	query := fmt.Sprintf(`select * from %s where room_id = "%s"`, r.TableName(), r.RoomId)
+	query := fmt.Sprintf(`select * from %s where room_id = "%d"`, r.TableName(), r.RoomId)
 
 	_, err := db.Select(&list, query)
 	if err != nil {
 		return nil, err
 	}
+	sum := 0
+	for _, rec := range list {
+		sum += rec.Water
+	}
 	sort.Sort(sortRecord(list))
 	resp := &struct {
 		Pagination
+		Sum  int
 		Data []*DBRecord `json:"data"`
 	}{}
 	if size == 0 {
@@ -179,6 +185,7 @@ func (r *DBRecord) List(db gorp.SqlExecutor, page int, size int) (interface{}, e
 		resp.TotalPage += 1
 	}
 	resp.Data = list[start:end]
+	resp.Sum = -sum
 	return resp, nil
 }
 
@@ -212,15 +219,18 @@ func (r *DBRecord) ListDBRoom(page int, size int) (interface{}, error) {
 }
 
 type DBRoom struct {
-	//	Id        int64     `db:"id","primarykey","autoincrement" json:"id"`
+	Id        int       `db:"id","primarykey","autoincrement" json:"id"`
 	RoomId    string    `db:"room_id","primarykey"`
 	RoomName  string    `db:"room_name"`
+	CreateAt  time.Time `db:"create_at"`
 	Base      int       `db:"base"`
 	Water     int       `db:"water"`
 	Admin     string    `db:"admin"`
 	StartTime time.Time `db:"start_time"`
 	EndTime   time.Time `db:"end_time"`
 	Duration  int       `db:"duration"`
+	ReqStatus bool      `db:"req_status"`
+	ActiveAt  time.Time `db:"active_at"`
 	//	Describe  string    `db:"discrible"`
 	Scope
 }
@@ -230,14 +240,17 @@ func (room *DBRoom) TableName() string {
 }
 
 func (room *DBRoom) Insert(db gorp.SqlExecutor) error {
+	room.CreateAt = time.Now()
+	fmt.Println("create time:", room.CreateAt)
 	return db.Insert(room)
 }
 
 func (room *DBRoom) Fetch(db gorp.SqlExecutor) error {
-	return db.SelectOne(room, fmt.Sprintf(`select * from %s where room_id="%s" `, room.TableName(), room.RoomId))
+	return db.SelectOne(room, fmt.Sprintf(`select * from %s where id="%v" `, room.TableName(), room.Id))
 }
 
 func (room *DBRoom) Update(db gorp.SqlExecutor) error {
+	fmt.Println("update time:", room.CreateAt)
 	_, err := db.Update(room)
 	return err
 }
@@ -245,7 +258,7 @@ func (room *DBRoom) Update(db gorp.SqlExecutor) error {
 type RoomUser struct {
 	Id     int64  `db:"id","primarykey","autoincrement" json:"id"`
 	Uid    string `db:"uid"`
-	RoomId string `db:"room_id"`
+	RoomId int    `db:"room_id"`
 	Player
 }
 
@@ -258,7 +271,7 @@ func (ruser *RoomUser) Insert(db gorp.SqlExecutor) error {
 }
 
 func (ruser *RoomUser) Fetch(db gorp.SqlExecutor) error {
-	return db.SelectOne(ruser, fmt.Sprintf(`select * from %s where uid="%s" and room_id="%s"`, ruser.TableName(), ruser.Uid, ruser.RoomId))
+	return db.SelectOne(ruser, fmt.Sprintf(`select * from %s where uid="%s" and room_id="%d"`, ruser.TableName(), ruser.Uid, ruser.RoomId))
 }
 
 func (ruser *RoomUser) Update(db gorp.SqlExecutor) error {
@@ -266,10 +279,10 @@ func (ruser *RoomUser) Update(db gorp.SqlExecutor) error {
 	return err
 }
 
-func (r *Room) Insert() error {
+func (r *Room) Insert() (int, error) {
 	trans, err := dBEngine.Begin()
 	if err != nil {
-		return err
+		return 0, err
 	}
 	defer func() {
 		if err != nil {
@@ -279,7 +292,7 @@ func (r *Room) Insert() error {
 		}
 	}()
 	dbRoom := &DBRoom{
-		RoomId:    r.id,
+		RoomId:    r.gid,
 		RoomName:  r.name,
 		Base:      r.base,
 		Water:     r.water,
@@ -287,6 +300,8 @@ func (r *Room) Insert() error {
 		StartTime: r.startTime,
 		EndTime:   r.endTime,
 		Duration:  r.duration,
+		ReqStatus: r.reqStatus,
+		CreateAt:  r.CreateAt,
 		//		Describe:  r.describe,
 		Scope: Scope{
 			CountUp:      r.CountUp,
@@ -298,24 +313,25 @@ func (r *Room) Insert() error {
 			Timeout:      r.Timeout,
 			ScoreLimit:   r.ScoreLimit,
 			Describe:     r.Describe,
+			RedInterval:  r.RedInterval,
 		},
 	}
 	err = dbRoom.Insert(trans)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	for uid, player := range r.users {
 		ruser := &RoomUser{
 			Uid:    uid,
-			RoomId: r.id,
+			RoomId: dbRoom.Id,
 			Player: *player,
 		}
 		err = ruser.Insert(trans)
 		if err != nil {
-			return err
+			return 0, err
 		}
 	}
-	return err
+	return dbRoom.Id, err
 }
 
 func (r *Room) Update() error {
@@ -331,7 +347,8 @@ func (r *Room) Update() error {
 		}
 	}()
 	dbRoom := &DBRoom{
-		RoomId:    r.id,
+		Id:        r.id,
+		RoomId:    r.gid,
 		RoomName:  r.name,
 		Base:      r.base,
 		Water:     r.water,
@@ -339,6 +356,9 @@ func (r *Room) Update() error {
 		StartTime: r.startTime,
 		EndTime:   r.endTime,
 		Duration:  r.duration,
+		ReqStatus: r.reqStatus,
+		CreateAt:  r.CreateAt,
+		ActiveAt:  r.ActiveAt,
 		//		Describe:  r.describe,
 		Scope: Scope{
 			CountUp:      r.CountUp,
@@ -350,15 +370,17 @@ func (r *Room) Update() error {
 			Timeout:      r.Timeout,
 			ScoreLimit:   r.ScoreLimit,
 			Describe:     r.Describe,
+			RedInterval:  r.RedInterval,
 		},
 	}
+
 	err = dbRoom.Update(trans)
 	return err
 }
 
 func (r *Room) Fetch() error {
 	dbRoom := &DBRoom{}
-	dbRoom.RoomId = r.id
+	dbRoom.Id = r.id
 	trans, err := dBEngine.Begin()
 	if err != nil {
 		return err
@@ -374,12 +396,12 @@ func (r *Room) Fetch() error {
 	if err != nil {
 		return err
 	}
-	rlist := []RoomUser{}
-	_, err = trans.Select(&rlist, fmt.Sprintf(`select * from %s where  room_id="%s"`, (&RoomUser{}).TableName(), r.id))
-	if err != nil {
+	rlist := []*RoomUser{}
+	_, err = trans.Select(&rlist, fmt.Sprintf(`select * from %s where  room_id="%d"`, (&RoomUser{}).TableName(), r.id))
+	if err != nil && err != sql.ErrNoRows {
 		return err
 	}
-
+	r.gid = dbRoom.RoomId
 	r.name = dbRoom.RoomName
 	r.base = dbRoom.Base
 	r.water = dbRoom.Water
@@ -396,10 +418,14 @@ func (r *Room) Fetch() error {
 	r.ScoreLimit = dbRoom.ScoreLimit
 	r.Describe = dbRoom.Describe
 	r.duration = dbRoom.Duration
+	r.RedInterval = dbRoom.RedInterval
+	r.reqStatus = dbRoom.ReqStatus
+	r.CreateAt = dbRoom.CreateAt
+	r.ActiveAt = dbRoom.ActiveAt
 	//	r.describe= dbRoom.Describe
 	r.users = make(map[string]*Player)
-	for _, u := range rlist {
-		r.users[u.Uid] = &u.Player
+	for i, u := range rlist {
+		r.users[u.Uid] = &(rlist[i].Player)
 	}
 	if p, ok := r.users[r.admin]; ok {
 		p.Role = Role_Admin
@@ -410,7 +436,7 @@ func (r *Room) Fetch() error {
 
 func (r *Room) DeleteDB() error {
 	dbRoom := &DBRoom{}
-	dbRoom.RoomId = r.id
+	dbRoom.Id = r.id
 	trans, err := dBEngine.Begin()
 	if err != nil {
 		return err
@@ -426,7 +452,7 @@ func (r *Room) DeleteDB() error {
 	if err != nil {
 		return err
 	}
-	query := fmt.Sprintf(`delete from %s where room_id="%s"`, (&RoomUser{}).TableName(), r.id)
+	query := fmt.Sprintf(`delete from %s where room_id="%d"`, (&RoomUser{}).TableName(), r.id)
 
 	_, err = trans.Exec(query)
 
@@ -434,7 +460,7 @@ func (r *Room) DeleteDB() error {
 
 }
 
-func (p *Player) Insert(rid string, uid string) error {
+func (p *Player) Insert(rid int, uid string) error {
 	u := &RoomUser{
 		RoomId: rid,
 		Uid:    uid,
@@ -443,7 +469,7 @@ func (p *Player) Insert(rid string, uid string) error {
 	return u.Insert(dBEngine)
 }
 
-func (p *Player) Update(rid string, uid string) error {
+func (p *Player) Update(rid int, uid string) error {
 	u := &RoomUser{
 		RoomId: rid,
 		Uid:    uid,
@@ -456,7 +482,7 @@ func (p *Player) Update(rid string, uid string) error {
 	return u.Update(dBEngine)
 }
 
-func Record(rid string, rname string, master string, body interface{}) error {
+func Record(rid int, rname string, master string, body interface{}, water int) error {
 	bs, err := json.Marshal(body)
 	if err != nil {
 		return err
@@ -465,12 +491,13 @@ func Record(rid string, rname string, master string, body interface{}) error {
 		RoomId:   rid,
 		RoomName: rname,
 		Master:   master,
+		Water:    water,
 		Body:     string(bs),
 	}
 	return r.Insert(dBEngine)
 }
 
-func BillList(rid string, page int, limit int) (interface{}, error) {
+func BillList(rid int, page int, limit int) (interface{}, error) {
 	rs := &DBRecord{
 		RoomId: rid,
 	}
@@ -499,21 +526,25 @@ func DBEngineInit() *gorp.DbMap {
 	roomTable := DBRoom{}
 	roomUserTable := RoomUser{}
 	reqTable := DBRoomPost{}
+	redTable := DBRed{}
 	dbEngine.AddTableWithName(userTable, userTable.TableName()).SetKeys(false, "Id", "NickName")
 	dbEngine.AddTableWithName(recordTable, recordTable.TableName()).SetKeys(true, "Id")
-	dbEngine.AddTableWithName(roomTable, roomTable.TableName()).SetKeys(false, "RoomId")
+	dbEngine.AddTableWithName(roomTable, roomTable.TableName()).SetKeys(true, "Id")
 	dbEngine.AddTableWithName(roomUserTable, roomUserTable.TableName()).SetKeys(true, "Id")
 	dbEngine.AddTableWithName(reqTable, reqTable.TableName()).SetKeys(false, "UserId")
+	dbEngine.AddTableWithName(redTable, redTable.TableName()).SetKeys(true, "Id")
 	return dbEngine
 }
 
 func RoomInit(db gorp.SqlExecutor) {
-	roomlist := []string{}
-	qurey := fmt.Sprintf(`select room_id from %s `, (&DBRoom{}).TableName())
+	roomlist := []int{}
+	qurey := fmt.Sprintf(`select id from %s `, (&DBRoom{}).TableName())
+
 	_, err := db.Select(&roomlist, qurey)
 	if err != nil {
 		fmt.Println(err)
 	}
+	fmt.Println(qurey, roomlist)
 	for _, rid := range roomlist {
 		room := &Room{
 			id: rid,
@@ -523,7 +554,13 @@ func RoomInit(db gorp.SqlExecutor) {
 			fmt.Println(err)
 			continue
 		}
-		room.active = true
+
+		if room.reqStatus {
+			room.active = false
+		} else {
+			room.active = true
+		}
+
 		room.Active()
 		RoomList[rid] = room
 	}

@@ -37,6 +37,21 @@ paths:
       responses:
         "200":
           description: '{string} set success'
+  /auth/qrcode.png:
+    get:
+      tags:
+      - auth
+      description: 房间二维码
+      operationId: AuthController.房间二维码
+      parameters:
+      - in: query
+        name: roomid
+        description: 房间id
+        type: integer
+        format: int64
+      responses:
+        "200":
+          description: '{string} image'
   /auth/token:
     post:
       tags:
@@ -78,7 +93,7 @@ paths:
         "403":
           description: uid is null
   /auth/wx/code:
-    post:
+    get:
       tags:
       - auth
       description: 微信认证
@@ -87,7 +102,8 @@ paths:
       - in: query
         name: state
         description: 房间ID
-        type: string
+        type: integer
+        format: int64
       - in: query
         name: code
         description: 微信code
@@ -96,7 +112,7 @@ paths:
         "200":
           description: '{string} token'
   /auth/wx/login:
-    post:
+    get:
       tags:
       - auth
       description: 微信认证
@@ -105,6 +121,25 @@ paths:
       - in: query
         name: roomid
         description: 房间ID
+        type: integer
+        format: int64
+      responses:
+        "200":
+          description: '{string} token'
+  /auth/wx/redirect:
+    get:
+      tags:
+      - auth
+      description: 微信跳转
+      operationId: AuthController.微信跳转
+      parameters:
+      - in: query
+        name: state
+        description: 房间ID
+        type: string
+      - in: query
+        name: token
+        description: token
         type: string
       responses:
         "200":
@@ -125,7 +160,8 @@ paths:
         name: roomid
         description: The roomid for rancher
         required: true
-        type: string
+        type: integer
+        format: int64
       - in: body
         name: body
         description: body for rancher
@@ -158,7 +194,8 @@ paths:
         name: roomid
         description: The roomid for rancher
         required: true
-        type: string
+        type: integer
+        format: int64
       responses:
         "200":
           description: '{string} success'
@@ -178,7 +215,8 @@ paths:
         name: roomid
         description: The roomid for rancher
         required: true
-        type: string
+        type: integer
+        format: int64
       responses:
         "200":
           description: '{string} success'
@@ -198,7 +236,8 @@ paths:
         name: roomid
         description: The roomid for cattle
         required: true
-        type: string
+        type: integer
+        format: int64
       responses:
         "200":
           schema:
@@ -221,7 +260,8 @@ paths:
         name: roomid
         description: The roomid for rancher
         required: true
-        type: string
+        type: integer
+        format: int64
       responses:
         "200":
           description: '{string} success'
@@ -241,12 +281,42 @@ paths:
         name: roomid
         description: The roomid for rancher
         required: true
-        type: string
+        type: integer
+        format: int64
       responses:
         "200":
           description: '{string} success'
         "403":
           description: body is empty
+  /cattle/redinfo:
+    get:
+      tags:
+      - cattle
+      description: 红包信息
+      operationId: CattleController.红包信息
+      parameters:
+      - in: query
+        name: token
+        description: The token for user
+        required: true
+        type: string
+      - in: query
+        name: roomid
+        description: The roomid for cattle
+        required: true
+        type: integer
+        format: int64
+      - in: query
+        name: redid
+        description: The redid for cattle
+        required: true
+        type: string
+      responses:
+        "200":
+          schema:
+            $ref: '#/definitions/models.DBRed'
+        "403":
+          description: query is empty
   /cattle/send:
     post:
       tags:
@@ -263,7 +333,8 @@ paths:
         name: roomid
         description: The roomid for cattle
         required: true
-        type: string
+        type: integer
+        format: int64
       - in: body
         name: body
         description: body for DiverReq
@@ -291,7 +362,8 @@ paths:
         name: roomid
         description: The id for room
         required: true
-        type: string
+        type: integer
+        format: int64
       responses:
         "200":
           description: '{string} ok'
@@ -311,7 +383,8 @@ paths:
         name: roomid
         description: The id for room
         required: true
-        type: string
+        type: integer
+        format: int64
       responses:
         "200":
           description: '{string} ok'
@@ -355,7 +428,8 @@ paths:
         name: roomid
         description: The key for staticblock
         required: true
-        type: string
+        type: integer
+        format: int64
       responses:
         "200":
           schema:
@@ -377,7 +451,8 @@ paths:
         name: roomid
         description: The roomid
         required: true
-        type: string
+        type: integer
+        format: int64
       responses:
         "200":
           description: '{string} ok'
@@ -409,7 +484,8 @@ paths:
         name: roomid
         description: The key for staticblock
         required: true
-        type: string
+        type: integer
+        format: int64
       responses:
         "200":
           description: '{string} success'
@@ -431,7 +507,8 @@ paths:
         name: roomid
         description: The roomid
         required: true
-        type: string
+        type: integer
+        format: int64
       responses:
         "200":
           description: '{string} ok'
@@ -465,6 +542,27 @@ paths:
           description: '{string} ok'
         "403":
           description: :roomid is empty
+  /room/active:
+    get:
+      tags:
+      - room
+      description: 激活
+      operationId: RoomController.激活
+      parameters:
+      - in: query
+        name: token
+        description: The token for user
+        required: true
+        type: string
+      - in: query
+        name: roomid
+        description: The id for room
+        required: true
+        type: integer
+        format: int64
+      responses:
+        "200":
+          description: '{bool} success'
   /room/config:
     post:
       tags:
@@ -482,7 +580,8 @@ paths:
         name: roomid
         description: The id for room
         required: true
-        type: string
+        type: integer
+        format: int64
       - in: query
         name: token
         description: The token for user
@@ -494,7 +593,7 @@ paths:
         "403":
           description: body is empty
   /room/list:
-    get:
+    post:
       tags:
       - room
       description: get all Rooms
@@ -515,6 +614,12 @@ paths:
         description: The default is 1
         type: integer
         format: int64
+      - in: body
+        name: body
+        description: body for list content
+        required: true
+        schema:
+          $ref: '#/definitions/models.ListReq'
       responses:
         "200":
           schema:
@@ -564,7 +669,7 @@ paths:
           $ref: '#/definitions/models.DBRoomPost'
       responses:
         "200":
-          description: '{string} ok'
+          description: '{string} name'
   /room/request/{id}:
     post:
       tags:
@@ -645,7 +750,8 @@ paths:
         name: roomid
         description: The roomid for user
         required: true
-        type: string
+        type: integer
+        format: int64
       - in: query
         name: uid
         description: The uid for user
@@ -678,7 +784,8 @@ paths:
         name: roomid
         description: The roomid for user
         required: true
-        type: string
+        type: integer
+        format: int64
       - in: query
         name: uid
         description: The uid for user
@@ -711,7 +818,8 @@ paths:
         name: roomid
         description: The roomid for user
         required: true
-        type: string
+        type: integer
+        format: int64
       responses:
         "200":
           description: '{string} token'
@@ -732,7 +840,8 @@ paths:
         name: roomid
         description: The roomid for user
         required: true
-        type: string
+        type: integer
+        format: int64
       responses:
         "200":
           description: '{string} set success'
@@ -754,7 +863,8 @@ paths:
         name: roomid
         description: The roomid for user
         required: true
-        type: string
+        type: integer
+        format: int64
       - in: query
         name: score
         description: the score of user
@@ -791,6 +901,26 @@ definitions:
   auth.MyCustomClaims:
     title: MyCustomClaims
     type: object
+  models.DBRed:
+    title: DBRed
+    type: object
+    properties:
+      Id:
+        type: integer
+        format: int64
+      UserId:
+        type: string
+      create_at:
+        type: string
+        format: string
+      red_id:
+        type: string
+      room_id:
+        type: integer
+        format: int64
+      score:
+        type: number
+        format: float
   models.DBRoomPost:
     title: DBRoomPost
     type: object
@@ -807,6 +937,8 @@ definitions:
         format: int64
       nicname:
         type: string
+      room_name:
+        type: string
   models.DiverReq:
     title: DiverReq
     type: object
@@ -817,6 +949,22 @@ definitions:
       RedAmount:
         type: number
         format: float
+  models.ListReq:
+    title: ListReq
+    type: object
+    properties:
+      active:
+        type: boolean
+      cancle:
+        type: boolean
+      expire:
+        type: boolean
+      is_used:
+        type: boolean
+      like:
+        type: string
+      req:
+        type: boolean
   models.Object:
     title: Object
     type: object
@@ -846,6 +994,8 @@ definitions:
         type: integer
         format: int64
       Master:
+        type: string
+      RedId:
         type: string
       Score:
         type: number
@@ -877,6 +1027,9 @@ definitions:
     properties:
       Active:
         type: boolean
+      ActiveAt:
+        type: string
+        format: string
       Admin:
         type: string
       Banker:
@@ -890,11 +1043,16 @@ definitions:
       CountUp:
         type: integer
         format: int64
+      CreateAt:
+        type: string
+        format: string
       Describe:
         type: string
       EndTime:
         type: string
         format: string
+      Expire:
+        type: boolean
       Fly:
         type: boolean
       LenUser:
@@ -909,9 +1067,14 @@ definitions:
       RedDown:
         type: number
         format: float
+      RedInterval:
+        type: integer
+        format: int64
       RedUp:
         type: number
         format: float
+      ReqStatus:
+        type: boolean
       RoomId:
         type: string
       RoomName:
@@ -958,6 +1121,9 @@ definitions:
       RedDown:
         type: number
         format: float
+      RedInterval:
+        type: integer
+        format: int64
       RedUp:
         type: number
         format: float
@@ -988,6 +1154,8 @@ definitions:
       Duration:
         type: integer
         format: int64
+      Nickname:
+        type: string
       RedCountDown:
         type: integer
         format: int64
@@ -997,6 +1165,9 @@ definitions:
       RedDown:
         type: number
         format: float
+      RedInterval:
+        type: integer
+        format: int64
       RedUp:
         type: number
         format: float

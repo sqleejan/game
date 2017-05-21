@@ -159,3 +159,210 @@ const (
   </body>
 </html>`
 )
+
+const bakhtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Document</title>
+  <link href="http://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link rel="stylesheet" href="/swagger/bak/static/assets/css/materialize.css">
+  <link rel="stylesheet" href="/swagger/bak/static/assets/css/toastr.min.css" type="text/css" />
+
+  <link rel="stylesheet" href="/swagger/bak/static/css/main.css" media="screen" title="no title" charset="utf-8">
+</head>
+<body>
+  <script src="/swagger/bak/static/assets/js/jq.js" charset="utf-8"></script>
+      <script type="text/javascript">
+$().ready(function(){
+  var token={{.Token}} 
+  sessionStorage.admin = token
+})
+</script>
+
+      <nav class="top red darken-4">
+        <div class="nav-wrapper">
+          <a href=" " class="brand-logo">后台管理系统</a >
+          <ul id="nav-mobile" class="right hide-on-med-and-down">
+            <li><a href="sass.html">Sass</a ></li>
+            <li><a href="badges.html">admin</a ></li>
+            <li><a href="collapsible.html">推出</a ></li>
+          </ul>
+        </div>
+      </nav>
+      <div class="row main-content">
+        <div class="col s2">
+          <ul class="list z-depth-5 blue-grey darken-4 clearfix">
+            <li class="blue-grey waves-effect waves-light btn" id="roomlist">房间列表</li>
+            <li class="blue-grey waves-effect waves-light btn" id="roombug">调度服务</li>
+          </ul>
+        </div>
+        <div class="col s10">
+          <div class="frombox">
+            <div class="search left">
+              <div class="left">关键字：</div>
+              <div class="search-wrapper left">
+                <input id="search">
+              </div>
+            </div>
+            <a class='dropdown-button btn red left dropdown1' href='#' data-activates='dropdown1'>房间状态</a >
+
+            <ul id='dropdown1' class='dropdown-content'>
+              <li class="showactive"><a href="#!">激活</a ></li>
+              <li class="useactive"><a href="#!">使用中</a ></li>
+              <li class="timeovering"><a href="#!">快到期</a ></li>
+              <li class="timeover"><a href="#!">已过期</a ></li>
+            </ul>
+            <a class='dropdown-button btn red left dropdown2' href='#' data-activates='dropdown2'>房间状态</a >
+
+            <ul id='dropdown2' class='dropdown-content'>
+              <li class="bugopen"><a href="#!">关闭</a ></li>
+              <li class="bugclose"><a href="#!">开启</a ></li>
+            </ul>
+            <table>
+              <thead class="roomlistheader">
+                <tr>
+                    <th>房间号</th>
+                    <th>房间名称</th>
+                    <th>申请时间</th>
+                    <th>激活时间</th>
+                    <th>启用时间</th>
+                    <th>到期时间</th>
+                    <th>购买时长</th>
+                    <th>房间状态</th>
+                    <th>操作</th>
+                </tr>
+              </thead>
+              <thead class="roombugheader">
+                <tr>
+                    <th>房间号</th>
+                    <th>房间名称</th>
+                    <th>房间状态</th>
+                </tr>
+              </thead>
+
+              <tbody class="roomlist">
+                <tr>
+                  <td>Alvin</td>
+                  <td>Eclair</td>
+                  <td>$0.87</td>
+                  <td>Alvin</td>
+                  <td>Eclair</td>
+                  <td>$0.87</td>
+                  <td>Alvin</td>
+                  <td>
+                    <ul class="btnlist">
+                      <li><a class="waves-effect waves-light btn actived">激活</a ></li>
+                      <li><a class="waves-effect waves-light btn close">注销</a ></li>
+                      <li><a class="waves-effect waves-light btn banker">账单</a ></li>
+                      <li><a class="waves-effect waves-light btn timer">设定时长</a ></li>
+                      <li><a class="waves-effect waves-light btn delet">删除</a ></li>
+                    </ul>
+                  </td>
+                </tr>
+              </tbody>
+              <tbody class="roombug">
+                <tr>
+                  <td>Alvin</td>
+                  <td>Eclair</td>
+                  <td>$0.87</td>
+                  <td>Alvin</td>
+                  <td>Eclair</td>
+                  <td>$0.87</td>
+                  <td>Alvin</td>
+                  <td>
+                    <ul class="btnlist">
+                      <li><a class="waves-effect waves-light btn actived">激活</a ></li>
+                      <li><a class="waves-effect waves-light btn close">注销</a ></li>
+                      <li><a class="waves-effect waves-light btn banker">账单</a ></li>
+                      <li><a class="waves-effect waves-light btn timer">设定时长</a ></li>
+                      <li><a class="waves-effect waves-light btn delet">删除</a ></li>
+                    </ul>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+          </div>
+          <ul class="pagination">
+            <li class="disabled pevr"><a href="#!"><i class="material-icons">chevron_left</i></a ></li>
+            <li class="waves-effect page"><a href="#!"></a ></li>
+            <li class="waves-effect next"><a href="#!"><i class="material-icons">chevron_right</i></a ></li>
+          </ul>
+        </div>
+      </div>
+      <footer class="page-footer red darken-4">
+        <div class="footer-copyright">
+          <div class="container">
+          © 2017 Copyright Text
+          <a class="grey-text text-lighten-4 right" href="#!">More Links</a >
+          </div>
+        </div>
+      </footer>
+      <div class="mask">
+      </div>
+      <div class="mask-time pupbox" >
+        <ul>
+          <li>
+            <div class="roomtimeinput">
+              <input type="text" name="" value="" placeholder="输入购买时长（小时）" class="timeinput">
+            </div>
+          </li>
+          <li>
+            <a class="waves-effect waves-light btn" id="updatatime">button</a >
+          </li>
+        </ul>
+      </div>
+      <div class="mask-room pupbox">
+        <table>
+          <thead >
+            <tr>
+                <th>Name</th>
+                <th>Item Name</th>
+                <th>Item Price</th>
+                <th>Item Price</th>
+                <th>Item Price</th>
+                <th>Item Price</th>
+                <th>Item Price</th>
+            </tr>
+          </thead>
+
+          <tbody class="roombill">
+            <tr>
+              <td>Alvin</td>
+              <td>Eclair</td>
+              <td>$0.87</td>
+            </tr>
+            <tr>
+              <td>Alan</td>
+              <td>Jellybean</td>
+              <td>$3.76</td>
+            </tr>
+            <tr>
+              <td>Jonathan</td>
+              <td>Lollipop</td>
+              <td>$7.00</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="preloader-wrapper big active tips">
+  <div class="spinner-layer spinner-red">
+    <div class="circle-clipper left">
+      <div class="circle"></div>
+    </div><div class="gap-patch">
+      <div class="circle"></div>
+    </div><div class="circle-clipper right">
+      <div class="circle"></div>
+    </div>
+  </div>
+</div>
+
+
+<script src="/swagger/bak/static/assets/js/toastr.js"></script>
+<script src="/swagger/bak/static/assets/js/materialize.min.js"></script>
+
+<script src="/swagger/bak/static/js/main.js" charset="utf-8"></script>
+
+</body>
+</html>`

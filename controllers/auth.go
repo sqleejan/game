@@ -4,9 +4,12 @@ import (
 	"encoding/json"
 	"game/auth"
 	"game/models"
+	"html/template"
 	"time"
 
-	"text/template"
+	"fmt"
+
+	"strings"
 
 	"github.com/astaxie/beego"
 )
@@ -32,11 +35,23 @@ func (o *AuthController) Token() {
 
 // @Title 微信认证
 // @Description 微信认证
-// @Param	roomid		query 	string		false		"房间ID"
+// @Param	roomid		query 	int		false		"房间ID"
 // @Success 200 {string} token
-// @router /wx/login [post]
+// @router /wx/login [get]
 func (o *AuthController) WXAuth() {
-	auth.CodeUrl(o.GetString("roomid"))
+	uagent := o.Ctx.Input.Header("User-Agent")
+	fmt.Println(uagent)
+	rid, err := o.GetInt("roomid", 0)
+	if err != nil {
+		o.CustomAbort(407, err.Error())
+		return
+	}
+
+	redirectUrl := auth.CodeUrl(rid, false)
+	if !strings.Contains(uagent, "MicroMessenger") {
+		redirectUrl = auth.CodeUrl(rid, true)
+	}
+	o.Redirect(redirectUrl, 302)
 	// var ob auth.MyCustomClaims
 	// json.Unmarshal(o.Ctx.Input.RequestBody, &ob)
 	// ob.ExpiresAt = time.Now().Add(time.Hour * 10).Unix()
@@ -46,24 +61,64 @@ func (o *AuthController) WXAuth() {
 
 // @Title 微信认证
 // @Description 微信认证
-// @Param	state		query 	string		false		"房间ID"
+// @Param	state		query 	int		false		"房间ID"
 // @Param	code		query 	string		false		"微信code"
 // @Success 200 {string} token
-// @router /wx/code [post]
+// @router /wx/code [get]
 func (o *AuthController) WXCode() {
-	//rid := o.GetString("state")
+	roomid, err := o.GetInt("state", 0)
+	if err != nil {
+		o.CustomAbort(407, err.Error())
+		return
+	}
+
 	code := o.GetString("code")
+	fmt.Println("code=", code)
 	if code == "" {
 		o.CustomAbort(405, "weixin auth failed!")
 		return
 	}
 	mc, err := auth.WXClaim(code)
 	if err != nil {
-		o.CustomAbort(405, "code is wrong!")
+		o.CustomAbort(405, err.Error())
 		return
 	}
-	o.Data["json"] = mc.Token()
-	o.ServeJSON()
+	_, err = models.CreateDBUser(mc.Id, mc.Audience)
+	if err != nil {
+		o.CustomAbort(500, err.Error())
+		return
+	}
+
+	o.Redirect("/swagger/new/redir.html?token="+mc.Token()+fmt.Sprintf("&state=%d", roomid), 302)
+	//o.Data["json"] = mc.Token()
+	//o.ServeJSON()
+
+	// var ob auth.MyCustomClaims
+	// json.Unmarshal(o.Ctx.Input.RequestBody, &ob)
+	// ob.ExpiresAt = time.Now().Add(time.Hour * 10).Unix()
+	// o.Data["json"] = ob.Token()
+	// o.ServeJSON()
+}
+
+// @Title 微信跳转
+// @Description 微信跳转
+// @Param	state		query 	string		false		"房间ID"
+// @Param	token		query 	string		false		"token"
+// @Success 200 {string} token
+// @router /wx/redirect [get]
+func (o *AuthController) Redi() {
+	roomid := o.GetString("state")
+	token := o.GetString("token")
+	if token == "" {
+		o.Data["json"] = "ok"
+		o.ServeJSON()
+		return
+	}
+
+	o.Redirect("/swagger/new/index.html?token="+token+"&roomid="+roomid, 302)
+	//o.Data["json"] = mc.Token()
+	//o.ServeJSON()
+
 	// var ob auth.MyCustomClaims
 	// json.Unmarshal(o.Ctx.Input.RequestBody, &ob)
 	// ob.ExpiresAt = time.Now().Add(time.Hour * 10).Unix()
@@ -117,8 +172,8 @@ func (u *AuthController) Login() {
 	}
 
 	//u.Data["json"] = "ok"
-
-	t := template.Must(template.New("roomreq").Delims("{{{", "}}}").Parse(requestRoomTemp))
+	//u.Redirect("/swagger/bak/admin.html", 302)
+	t := template.Must(template.New("roomreq").Parse(bakhtml))
 	t.Execute(u.Ctx.ResponseWriter, data)
 
 	return
@@ -129,7 +184,7 @@ func (u *AuthController) Login() {
 // @Success 200 {string} set success
 // @router /admin/login [get]
 func (u *AuthController) LoginGet() {
-	u.Redirect("/static/login.html", 301)
+	u.Redirect("/static/login.html", 302)
 	return
 }
 
@@ -156,4 +211,29 @@ func (u *AuthController) Update() {
 	//u.Data["json"] = "ok"
 
 	u.ServeJSON()
+}
+
+// @Title 房间二维码
+// @Description 房间二维码
+// @Param	roomid		query 	int		false		"房间id"
+// @Success 200 {string} image
+// @router /qrcode.png [get]
+func (o *AuthController) QRCode() {
+	roomid, err := o.GetInt("roomid")
+	if err != nil {
+		o.CustomAbort(500, err.Error())
+		return
+	}
+	bt, err := auth.QRCode(roomid)
+	if err != nil {
+		o.CustomAbort(500, err.Error())
+		return
+	}
+	o.Ctx.Output.Header("Content-Type", "image/png")
+	o.Ctx.Output.Body(bt)
+	// var ob auth.MyCustomClaims
+	// json.Unmarshal(o.Ctx.Input.RequestBody, &ob)
+	// ob.ExpiresAt = time.Now().Add(time.Hour * 10).Unix()
+	// o.Data["json"] = ob.Token()
+	// o.ServeJSON()
 }

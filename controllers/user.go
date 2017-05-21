@@ -5,6 +5,8 @@ import (
 	"game/auth"
 	"game/models"
 
+	"fmt"
+
 	"github.com/astaxie/beego"
 )
 
@@ -16,7 +18,7 @@ type UserController struct {
 // @Title Join Room
 // @Description Join Room
 // @Param	token		query 	string	true		"The token for user"
-// @Param	roomid		query 	string	true		"The roomid for user"
+// @Param	roomid		query 	int		true		"The roomid for user"
 // @Success 200 {string} token
 // @Failure 403 body is empty
 // @router /join [post]
@@ -27,7 +29,11 @@ func (u *UserController) Join() {
 		u.CustomAbort(405, err.Error())
 		return
 	}
-	rid := u.GetString("roomid")
+	rid, err := u.GetInt("roomid", 0)
+	if err != nil {
+		u.CustomAbort(407, err.Error())
+		return
+	}
 	room, ok := models.RoomList[rid]
 	if !ok {
 		u.CustomAbort(500, "the room is not exist")
@@ -49,7 +55,7 @@ func (u *UserController) Join() {
 // @Title Active User
 // @Description Active User
 // @Param	token		query 	string	true		"The token for user"
-// @Param	roomid		query 	string	true		"The roomid for user"
+// @Param	roomid		query 	int		true		"The roomid for user"
 // @Param	uid		query 	string	true		"The uid for user"
 // @Param	body		body 	models.UserActiveReq	true		"body for DiverReq"
 // @Success 200 {string} token
@@ -63,7 +69,11 @@ func (u *UserController) Active() {
 		return
 	}
 
-	rid := u.GetString("roomid")
+	rid, err := u.GetInt("roomid", 0)
+	if err != nil {
+		u.CustomAbort(407, err.Error())
+		return
+	}
 	room, ok := models.RoomList[rid]
 	if !ok {
 		u.CustomAbort(500, "the room is not exist")
@@ -98,7 +108,7 @@ func (u *UserController) Active() {
 // @Title 修改积分
 // @Description 修改积分
 // @Param	token		query 	string	true		"The token for user"
-// @Param	roomid		query 	string	true		"The roomid for user"
+// @Param	roomid		query 	int		true		"The roomid for user"
 // @Param	score		query 	int		true		"the score of user"
 // @Param	uid			query 	string	true		"the id of user"
 // @Success 200 {string} token
@@ -117,7 +127,12 @@ func (u *UserController) Score() {
 		return
 	}
 
-	rid := u.GetString("roomid")
+	rid, err := u.GetInt("roomid", 0)
+	if err != nil {
+		u.CustomAbort(407, err.Error())
+		return
+	}
+
 	room, ok := models.RoomList[rid]
 	if !ok {
 		u.CustomAbort(500, "the room is not exist")
@@ -141,7 +156,7 @@ func (u *UserController) Score() {
 // @Title Set Assistant
 // @Description Set Assistant
 // @Param	token		query 	string	true		"The token for user"
-// @Param	roomid		query 	string	true		"The roomid for user"
+// @Param	roomid		query 	int		true		"The roomid for user"
 // @Param	uid		query 	string	true		"The uid for user"
 // @Param	role	query 	int	true		"The role for user"
 // @Success 200 {string} set success
@@ -159,7 +174,11 @@ func (u *UserController) Assistant() {
 		u.CustomAbort(405, err.Error())
 		return
 	}
-	rid := u.GetString("roomid")
+	rid, err := u.GetInt("roomid", 0)
+	if err != nil {
+		u.CustomAbort(407, err.Error())
+		return
+	}
 	room, ok := models.RoomList[rid]
 	if !ok {
 		u.CustomAbort(500, "the room is not exist")
@@ -185,12 +204,16 @@ func (u *UserController) Assistant() {
 // @Title 玩家列表
 // @Description Get Users
 // @Param	token		query 	string	false		"The token for user"
-// @Param	roomid		query 	string	true		"The roomid for user"
+// @Param	roomid		query 	int		true		"The roomid for user"
 // @Success 200 {string} set success
 // @Failure 403 uid is null
 // @router /list [get]
 func (u *UserController) List() {
-	rid := u.GetString("roomid")
+	rid, err := u.GetInt("roomid", 0)
+	if err != nil {
+		u.CustomAbort(407, err.Error())
+		return
+	}
 	_, ok := models.RoomList[rid]
 	if !ok {
 		u.CustomAbort(500, "the room is not exist")
@@ -213,12 +236,6 @@ func (u *UserController) GetSelf() {
 		u.CustomAbort(405, err.Error())
 		return
 	}
-	nicname, js, err := models.FetchUserInfo(mc.Id)
-	if err != nil {
-		u.CustomAbort(500, err.Error())
-		return
-	}
-	mc.Audience = nicname
 
 	res := struct {
 		*auth.MyCustomClaims
@@ -228,16 +245,27 @@ func (u *UserController) GetSelf() {
 		Roles:          []*models.SelfObj{},
 	}
 
-	for _, k := range js {
-		res.Roles = append(res.Roles, k)
-		// room, ok := models.RoomList[k]
-		// if !ok {
-		// 	delete(js, k)
-		// 	continue
-		// }
-		// if !room.Active() {
-		// 	delete(js, k)
-		// }
+	nicname, js, err := models.FetchUserInfo(mc.Id)
+	if err != nil {
+		//u.CustomAbort(500, err.Error())
+		fmt.Println(err)
+
+	} else {
+
+		mc.Audience = nicname
+
+		for _, k := range js {
+			res.Roles = append(res.Roles, k)
+			// room, ok := models.RoomList[k]
+			// if !ok {
+			// 	delete(js, k)
+			// 	continue
+			// }
+			// if !room.Active() {
+			// 	delete(js, k)
+			// }
+		}
+
 	}
 
 	u.Data["json"] = res

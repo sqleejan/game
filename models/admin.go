@@ -1,7 +1,10 @@
 package models
 
 import (
+	"fmt"
+	"regexp"
 	"sort"
+	"time"
 )
 
 const (
@@ -44,14 +47,79 @@ func adminInsert() {
 	u.Insert(dBEngine)
 }
 
-type RLConvert map[string]*Room
+type RLConvert map[int]*Room
 
-func (rl RLConvert) Convert(page, size int) interface{} {
-	list := []string{}
-	for k := range rl {
+func (room *Room) StatByte() byte {
+	stat := byte(0)
+	if room.reqStatus {
+		stat = stat | 1<<4
+	}
+	now := time.Now()
+	if room.active {
+		stat = stat | 1<<3
+	} else {
+		stat = stat | 1
+	}
+
+	isused := room.endTime.After(now)
+	expired := false
+	if isused {
+		stat = stat | 1<<2
+		expired = now.Add(time.Minute * 30).After(room.endTime)
+		if expired {
+			stat = stat | 1<<1
+		}
+	}
+	return stat
+
+}
+
+func (lreq *ListReq) StatByte() byte {
+	stat := byte(0)
+	if lreq.Req {
+		stat = stat | 1<<4
+	}
+	if lreq.Active {
+		stat = stat | 1<<3
+	}
+	if lreq.IsUsed {
+		stat = stat | 1<<2
+	}
+	if lreq.Expire {
+		stat = stat | 1<<1
+	}
+	if lreq.Cancle {
+		stat = stat | 1
+	}
+	return stat
+}
+func (rl RLConvert) Convert(listreq *ListReq, page int, size int) interface{} {
+	fmt.Println(len(rl))
+	leftList := map[int]*Room{}
+	query := ".*"
+	if listreq.Like != "" {
+		query = listreq.Like + query
+	}
+	for id, room := range rl {
+
+		matched, _ := regexp.MatchString(listreq.Like, room.name)
+		fmt.Println(room.name, listreq.Like, matched)
+		if matched {
+			reqstat := listreq.StatByte()
+			fmt.Println(reqstat, room.StatByte())
+			if (reqstat & room.StatByte()) == reqstat {
+				//if room.reqStatus
+				leftList[id] = rl[id]
+			}
+
+		}
+	}
+
+	list := []int{}
+	for k := range leftList {
 		list = append(list, k)
 	}
-	sort.Strings(list)
+	sort.Ints(list)
 	resp := &struct {
 		Pagination
 		Data []*RoomResponeNoUsers `json:"data"`
@@ -70,7 +138,7 @@ func (rl RLConvert) Convert(page, size int) interface{} {
 	}
 	data := []*RoomResponeNoUsers{}
 	for _, v := range list[start:end] {
-		data = append(data, rl[v].ConvertNoUsers())
+		data = append(data, leftList[v].ConvertNoUsers())
 	}
 	resp.Data = data
 	return resp
