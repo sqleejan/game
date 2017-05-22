@@ -166,13 +166,13 @@ const bakhtml = `<!DOCTYPE html>
   <meta charset="UTF-8">
   <title>Document</title>
   <link href="http://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-  <link rel="stylesheet" href="/swagger/bg/static/assets/css/materialize.css">
-  <link rel="stylesheet" href="/swagger/bg/static/assets/css/toastr.min.css" type="text/css" />
+  <link rel="stylesheet" href="/bg/static/assets/css/materialize.css">
+  <link rel="stylesheet" href="/bg/static/assets/css/toastr.min.css" type="text/css" />
 
-  <link rel="stylesheet" href="/swagger/bg/static/css/main.css" media="screen" title="no title" charset="utf-8">
+  <link rel="stylesheet" href="/bg/static/css/main.css" media="screen" title="no title" charset="utf-8">
 </head>
 <body>
-  <script src="/swagger/bg/static/assets/js/jq.js" charset="utf-8"></script>
+  <script src="/bg/static/assets/js/jq.js" charset="utf-8"></script>
       <script type="text/javascript">
 $().ready(function(){
   var token={{.Token}} 
@@ -359,10 +359,10 @@ $().ready(function(){
 </div>
 
 
-<script src="/swagger/bg/static/assets/js/toastr.js"></script>
-<script src="/swagger/bg/static/assets/js/materialize.min.js"></script>
+<script src="/bg/static/assets/js/toastr.js"></script>
+<script src="/bg/static/assets/js/materialize.min.js"></script>
 
-<script src="/swagger/bg/static/js/main.js" charset="utf-8"></script>
+<script src="/bg/static/js/main.js" charset="utf-8"></script>
 
 </body>
 </html>`

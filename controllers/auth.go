@@ -89,7 +89,7 @@ func (o *AuthController) WXCode() {
 		return
 	}
 
-	o.Redirect("/swagger/fg/redir.html?token="+mc.Token()+fmt.Sprintf("&state=%d", roomid), 302)
+	o.Redirect("/fg/redir.html?token="+mc.Token()+fmt.Sprintf("&state=%d", roomid), 302)
 	//o.Data["json"] = mc.Token()
 	//o.ServeJSON()
 
@@ -115,7 +115,7 @@ func (o *AuthController) Redi() {
 		return
 	}
 
-	o.Redirect("/swagger/fg/index.html?token="+token+"&roomid="+roomid, 302)
+	o.Redirect("/fg/index.html?token="+token+"&roomid="+roomid, 302)
 	//o.Data["json"] = mc.Token()
 	//o.ServeJSON()
 
