@@ -69,8 +69,15 @@ func CreateDBUser(openid, nicname string) (string, error) {
 
 	pas := string(Krand(8, KC_RAND_KIND_LOWER))
 	fmt.Println("insert uid:", openid, "pas:", pas)
+retry:
 	err := cemsdk.CreateAccount(openid, pas, nicname)
-	if err != nil && !strings.Contains(err.Error(), fmt.Sprintf("%s exists", openid)) {
+	if err != nil {
+		if strings.Contains(err.Error(), fmt.Sprintf("%s exists", openid)) {
+			if err := cemsdk.DeleteAccount(openid); err != nil {
+				return "", err
+			}
+			goto retry
+		}
 		return "", err
 	}
 	defer func() {
