@@ -121,6 +121,7 @@ func WXClaim(code string) (*MyCustomClaims, error) {
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println("nicname:", user.Nickname)
 	claims := &MyCustomClaims{}
 	claims.ExpiresAt = time.Now().Add(time.Hour * 10).Unix()
 	claims.Id = token.OpenId
