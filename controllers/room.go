@@ -29,10 +29,6 @@ func (u *RoomController) Post() {
 		u.CustomAbort(405, err.Error())
 		return
 	}
-	if mc.Id != "admin" {
-		u.CustomAbort(408, "permission is not allow!")
-		return
-	}
 
 	var req models.RoomReq
 	err = json.Unmarshal(u.Ctx.Input.RequestBody, &req)
@@ -41,6 +37,11 @@ func (u *RoomController) Post() {
 		return
 		//u.Data["json"] = err.Error()
 	} else {
+		if mc.Id != req.UserId {
+			u.CustomAbort(408, "permission is not allow!")
+			return
+		}
+
 		print(req)
 		room, err := models.CreateRoom(&req)
 		if err != nil {
