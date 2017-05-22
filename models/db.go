@@ -111,7 +111,7 @@ func GetToken(openid string) (string, error) {
 		}
 		return "", err
 	}
-
+	fmt.Println("uid:", u.Id, "pass:", u.Password)
 	token := ""
 	token, err = cemsdk.GetUserToken(u.Id, u.Password)
 	return token, err
@@ -252,7 +252,7 @@ func (room *DBRoom) Fetch(db gorp.SqlExecutor) error {
 func (room *DBRoom) Update(db gorp.SqlExecutor) error {
 	fmt.Println("update time:", room.CreateAt)
 	_, err := db.Update(room)
-	return err
+	return errg
 }
 
 type RoomUser struct {
