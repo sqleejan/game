@@ -184,7 +184,7 @@ func (u *AuthController) Login() {
 // @Success 200 {string} set success
 // @router /admin/login [get]
 func (u *AuthController) LoginGet() {
-	u.Redirect("/static/login.html", 302)
+	u.Redirect("/bg/index.html", 302)
 	return
 }
 
