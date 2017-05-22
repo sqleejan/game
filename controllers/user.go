@@ -251,8 +251,9 @@ func (u *UserController) GetSelf() {
 		fmt.Println(err)
 
 	} else {
-
-		mc.Audience = nicname
+		if nicname != "" {
+			mc.Audience = nicname
+		}
 
 		for _, k := range js {
 			res.Roles = append(res.Roles, k)
