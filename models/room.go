@@ -338,7 +338,7 @@ func (r *Room) SetStatus(stat int) {
 }
 
 func CreateRoom(req *RoomReq) (*Room, error) {
-	if len(RoomList) > 200 {
+	if len(RoomList) > 1000 {
 		return nil, fmt.Errorf("the number of rooms overflow!")
 	}
 	gid, err := cemsdk.AddGroup(req.RoomName, "", req.UserId, true, false, req.UserLimit, nil)
@@ -384,9 +384,10 @@ func CreateRoom(req *RoomReq) (*Room, error) {
 	}
 
 	adminPlayer := &Player{
-		Role:   Role_Admin,
-		Active: true,
-		Score:  0,
+		Role:    Role_Admin,
+		Active:  true,
+		Score:   0,
+		NicName: req.Nickname,
 	}
 	room.users[req.UserId] = adminPlayer
 	roomid, err := room.Insert()

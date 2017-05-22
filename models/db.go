@@ -68,7 +68,7 @@ func CreateDBUser(openid, nicname string) (string, error) {
 	}
 
 	pas := string(Krand(8, KC_RAND_KIND_LOWER))
-	fmt.Println("insert uid:", openid, "pas:", pas)
+	//fmt.Println("insert uid:", openid, "pas:", pas)
 retry:
 	err := cemsdk.CreateAccount(openid, pas, nicname)
 	if err != nil {
@@ -87,7 +87,7 @@ retry:
 	}()
 	u.Password = pas
 	u.NickName = ""
-	fmt.Println("db insert uid:", u.Id, "pas:", u.Password)
+	//fmt.Println("db insert uid:", u.Id, "pas:", u.Password)
 	var trans *gorp.Transaction
 	trans, err = dBEngine.Begin()
 	defer func() {
@@ -120,7 +120,7 @@ func GetToken(openid string) (string, error) {
 		}
 		return "", err
 	}
-	fmt.Println("uid:", u.Id, "pass:", u.Password)
+	//fmt.Println("uid:", u.Id, "pass:", u.Password)
 	token := ""
 	token, err = cemsdk.GetUserToken(u.Id, u.Password)
 	return token, err
@@ -560,7 +560,7 @@ func RoomInit(db gorp.SqlExecutor) {
 		}
 		err := room.Fetch()
 		if err != nil {
-			fmt.Println(err)
+			//fmt.Println(err)
 			continue
 		}
 
