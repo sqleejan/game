@@ -88,7 +88,7 @@ func (o *AuthController) WXCode() {
 		o.CustomAbort(500, err.Error())
 		return
 	}
-
+	fmt.Println("token:", mc.Token())
 	o.Redirect("/fg/redir.html?token="+mc.Token()+fmt.Sprintf("&state=%d", roomid), 302)
 	//o.Data["json"] = mc.Token()
 	//o.ServeJSON()
