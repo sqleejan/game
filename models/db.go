@@ -252,7 +252,7 @@ func (room *DBRoom) Fetch(db gorp.SqlExecutor) error {
 func (room *DBRoom) Update(db gorp.SqlExecutor) error {
 	fmt.Println("update time:", room.CreateAt)
 	_, err := db.Update(room)
-	return errg
+	return err
 }
 
 type RoomUser struct {
