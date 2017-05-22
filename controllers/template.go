@@ -174,10 +174,8 @@ const bakhtml = `<!DOCTYPE html>
 <body>
   <script src="/bg/static/assets/js/jq.js" charset="utf-8"></script>
       <script type="text/javascript">
-$().ready(function(){
   var token={{.Token}} 
   sessionStorage.admin = token
-})
 </script>
 
       <nav class="top red darken-4">
