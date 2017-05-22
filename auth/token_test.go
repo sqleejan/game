@@ -7,10 +7,10 @@ import (
 
 func TestToken(t *testing.T) {
 
-	fmt.Println(CodeUrl(123, false))
-	return
+	//fmt.Println(CodeUrl(123, false))
+	//return
 	// fmt.Println(Gen("dddddd", "sfsdfsdfdfdsfdsfdsfdsfsdfdsfds", "xui"))
-	myc, err := Parse("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJsZWVqYW4iLCJleHAiOjE0OTUyMjE2NTcsImp0aSI6Im9mYzNQdnBTZ2tlVjc1MGNmZ0M4Q2txNWVtREkiLCJpc3MiOiJodHRwOi8vd3gucWxvZ28uY24vbW1vcGVuL1BpYWp4U3FCUmFFSXplMkR2Y0VlNXQ5Z2d6akptcnMzNmhSSWZ0aWFMTlozUHVibk5FSE03b3FRZEVCbHV4T1o1VWZEcEtMU0dIQXluOXJqc2ljUDV1MWp3LzAifQ.JIHmA1szQs251x8VRqvWNoKVeuKM-SVz4Lx6p5AZcCQ")
+	myc, err := Parse("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJsZWVqYW4iLCJleHAiOjE0OTU0NzU5ODIsImp0aSI6Im9tbFZTd2VLZFNRQ28zR29rRkJYdjJHYXA5RVkiLCJpc3MiOiJodHRwOi8vd3gucWxvZ28uY24vbW1vcGVuL1BpYWp4U3FCUmFFSTh6N1FEYUdBY082dDNCT1FheUVYZWljaWJJdmRNUDduQkJHcXB2ZkVxVUZPSE9DaWNKQXRWaWNwaWNVd2ljVU5xU1UzODFWV0YzZGgzMHZsdy8wIn0.5TuYtCAqMM-mgHwvVhKRJt7RB-1bYLHWCnwnSQBlHsU")
 	//myc, err := WXClaim("031P7vTv1hJRfd0IuoUv184qTv1P7vTS")
 	fmt.Println(err)
 	if myc != nil {
