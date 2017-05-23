@@ -109,6 +109,11 @@ type Mark struct {
 
 func MakeReport(rs []*result, redid string) *Marks {
 	marks := []Mark{}
+	if len(rs)==0{
+		return &Marks{
+			RedId: redid,
+		}
+	}
 	water := 0
 	for _, r := range rs {
 		marks = append(marks, Mark{
@@ -1271,7 +1276,7 @@ func GenerateScore(sum int, count int, score chan int, is bool) {
 
 func (r *Room) juge(rs []*result, base int, water int, master string) []*result {
 	length := len(rs)
-	if length < 2 {
+	if length < 1 {
 		return nil
 	}
 	last := rs[length-1]
