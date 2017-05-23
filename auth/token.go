@@ -65,7 +65,7 @@ func Parse(tokenString string) (*MyCustomClaims, error) {
 }
 
 func QRCode(rid int) ([]byte, error) {
-	return qrcode.Encode(loginURI+fmt.Sprintf("?roomid=%s", rid), qrcode.Medium, 256)
+	return qrcode.Encode(loginURI+fmt.Sprintf("?roomid=%d", rid), qrcode.Medium, 256)
 }
 
 var (

@@ -37,7 +37,7 @@ func (o *AuthController) Token() {
 // @Description 微信认证
 // @Param	roomid		query 	int		false		"房间ID"
 // @Success 200 {string} token
-// @router /wx/login [get]
+// @router /wx/checkin [get]
 func (o *AuthController) WXAuth() {
 	uagent := o.Ctx.Input.Header("User-Agent")
 	fmt.Println(uagent)
