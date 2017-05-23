@@ -981,14 +981,18 @@ func (r *Room) Diver(master string, req *DiverReq) (*Marks, error) {
 	}
 	fmt.Printf("score amount=====: %d [%s]\n", rd.amount, r.id)
 	GenerateScore(rd.amount, rd.count, r.score, r.superman)
-
+	var masterNic string
+	mPlayer, ok := r.users[master]
+	if ok {
+		masterNic = mPlayer.NicName
+	}
 	// masterscore := <-r.score
 	// response := []*result{&result{
 	// 	custom: master,
 	// 	score:  masterscore,
 	// }}
 
-	emsay(r.gid, fmt.Sprintf(`{"type":"redhat","redid":%s,"master":%s,"amount":%v,"diver":%d}`, redid, master, req.RedAmount, req.RedAmount))
+	emsay(r.gid, fmt.Sprintf(`{"type":"redhat","redid":"%s","nicname":"%s","master":"%s","amount":%v,"diver":%d}`, redid, master, masterNic, req.RedAmount, req.Diver))
 	response := []*result{}
 	r.locker.Lock()
 	r.hasScore = true
