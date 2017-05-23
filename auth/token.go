@@ -71,7 +71,7 @@ func QRCode(rid int) ([]byte, error) {
 var (
 	appId       = "wx9f85ad10c59fc23c"
 	appSecret   = "102576667f4d60f65c0d1405c8a04d4e"
-	loginURI    = "http://game.highlifes.com/v1/auth/wx/login"
+	loginURI    = "http://game.highlifes.com/v1/auth/wx/checkin"
 	redirectURI = "http://game.highlifes.com/v1/auth/wx/code"
 	scope       = "snsapi_userinfo"
 	state       = ""
