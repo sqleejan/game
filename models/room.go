@@ -102,24 +102,31 @@ type Marks struct {
 }
 
 type Mark struct {
-	Custom string
-	Score  float32
-	Pay    int
+	Custom   string
+	Score    float32
+	Pay      int
+	Nickname string
 }
 
-func MakeReport(rs []*result, redid string) *Marks {
+func (room *Room) makeReport(rs []*result, redid string) *Marks {
 	marks := []Mark{}
-	if len(rs)==0{
+	if len(rs) == 0 {
 		return &Marks{
 			RedId: redid,
 		}
 	}
 	water := 0
 	for _, r := range rs {
+		var nicname string
+		player, ok := room.users[r.custom]
+		if ok {
+			nicname = player.NicName
+		}
 		marks = append(marks, Mark{
-			Custom: r.custom,
-			Score:  float32(r.score) / 100,
-			Pay:    r.bay,
+			Custom:   r.custom,
+			Score:    float32(r.score) / 100,
+			Pay:      r.bay,
+			Nickname: nicname,
 		})
 		water += r.bay
 	}
@@ -403,7 +410,7 @@ func CreateRoom(req *RoomReq) (*Room, error) {
 	}
 
 	room.id = roomid
-	room.name = fmt.Sprintf("%s的 %d房间", req.Nickname, roomid)
+	room.name = fmt.Sprintf("%s的 %d号房间", req.Nickname, roomid)
 	fmt.Println(room.Update())
 	roomLock.Lock()
 	RoomList[roomid] = room
@@ -1053,7 +1060,7 @@ func (r *Room) Diver(master string, req *DiverReq) (*Marks, error) {
 					response = append(response, rs)
 					r.scoreClear()
 					res := r.juge(response, rd.base, r.water, r.redhatMaster)
-					reports := MakeReport(res, redid)
+					reports := r.makeReport(res, redid)
 					print(reports)
 					Record(r.id, r.name, r.admin, reports, reports.Water)
 					if rd.end {
