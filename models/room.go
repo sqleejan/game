@@ -849,7 +849,7 @@ func (r *Room) MasterRedhat(master string) error {
 	// 	"type": "txt",
 	// 	"msg":  fmt.Sprintf("%s[%s] 抢到庄家", nicname, master),
 	// }, map[string]string{})
-	emsay(r.gid, fmt.Sprintf(`{"type":"message","msg":"%s[%s] 抢到庄家.请点击连庄按钮配置连庄次数..."}`, nicname, master))
+	emsay(r.gid, fmt.Sprintf(`{"type":"message","msg":"%s 抢到庄家.请点击连庄按钮配置连庄次数..."}`, nicname))
 	return nil
 }
 
@@ -981,9 +981,14 @@ func (r *Room) Diver(master string, req *DiverReq) (*Marks, error) {
 	r.echo = make(chan *result)
 
 	//传递信息给抢红的用户
+	var mNic string
+	pl,ok:=r.users[master]
+	if ok{
+	   mNic=pl.NicName
+	}
 	r.results = make(map[string]*result)
 	r.results["000--"] = &result{
-		custom: master,
+		custom: mNic,
 		score:  rd.amount,
 		bay:    req.Diver,
 	}
