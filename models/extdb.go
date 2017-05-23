@@ -104,6 +104,7 @@ type DBRed struct {
 	RedId    string    `db:"red_id" json:"red_id"`
 	RoomId   int       `db:"room_id" json:"room_id"`
 	Score    float32   `db:"score" json:"score"`
+	NicName  string    `db:"nick_name" json:"nicname"`
 }
 
 func (red DBRed) TableName() string {
@@ -115,12 +116,13 @@ func (red *DBRed) Insert() error {
 	return dBEngine.Insert(red)
 }
 
-func RedInsert(roomid int, redid string, uid string, score float32) error {
+func RedInsert(roomid int, redid string, uid string, nicname string, score float32) error {
 	dbred := &DBRed{
-		UserId: uid,
-		RedId:  redid,
-		RoomId: roomid,
-		Score:  score,
+		UserId:  uid,
+		RedId:   redid,
+		RoomId:  roomid,
+		Score:   score,
+		NicName: nicname,
 	}
 	return dbred.Insert()
 }

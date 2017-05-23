@@ -1137,6 +1137,11 @@ func (r *Room) GetScore(custom string) (*ScoreUnion, error) {
 	if ok {
 		redid = redresult.custom
 	}
+	var nicname string
+	pl, ok := r.users[custom]
+	if ok {
+		nicname = pl.NicName
+	}
 	score := <-r.score
 
 	if score < 0 {
@@ -1157,7 +1162,7 @@ func (r *Room) GetScore(custom string) (*ScoreUnion, error) {
 			res.RedId = redid
 		}
 
-		RedInsert(r.id, redid, custom, res.Score)
+		RedInsert(r.id, redid, custom, nicname, res.Score)
 		return res, nil
 		//return -score, nil
 	}
@@ -1174,7 +1179,7 @@ func (r *Room) GetScore(custom string) (*ScoreUnion, error) {
 		res.Count = rt.bay
 		res.Amount = float32(rt.score) / 100
 	}
-	RedInsert(r.id, redid, custom, res.Score)
+	RedInsert(r.id, redid, custom, nicname, res.Score)
 	return res, nil
 
 }
