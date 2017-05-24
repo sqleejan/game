@@ -141,7 +141,7 @@ func RedList(roomid int, redid string) ([]*DBRed, error) {
 		if wc>5{
 		  cnum+=1
 		}
-		res[i].Score=float(cnum)/100
+		res[i].Score=float32(cnum)/100
 	}
 	return res, nil
 }
