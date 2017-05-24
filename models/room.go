@@ -845,6 +845,10 @@ func (r *Room) MasterRedhat(master string) error {
 	if u != nil {
 		nicname = u.Nicname
 	}
+	mp,ok:=r.users[master]
+	if ok{
+	    nicname=mp.NicName
+	}
 	// cemsdk.SendMessage("admin", "chatgroups", []string{r.id}, map[string]string{
 	// 	"type": "txt",
 	// 	"msg":  fmt.Sprintf("%s[%s] 抢到庄家", nicname, master),
