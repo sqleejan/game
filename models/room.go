@@ -1077,18 +1077,15 @@ func (r *Room) Diver(master string, req *DiverReq) (*Marks, error) {
 					if rd.end {
 						r.redhatClear()
 						emsay(r.gid, `{"type":"message","msg":"本轮坐庄结束"}`)
+					}else{
+						emsay(r.gid, fmt.Sprintf(`{"type":"msg","msg":"剩余坐庄次数%v"}`, leaveRed-1))
 					}
+					
 					// nicname:=""
 					// um,ok1:=r.users[master]
 					// if ok1{
 					// 	nicname=um.NicName
 					// }
-					if (leaveRed-1)==0{
-						emsay(r.gid, fmt.Sprintf(`{"type":"msg","msg":"本轮坐庄结束"}`))
-					}esle{
-						emsay(r.gid, fmt.Sprintf(`{"type":"msg","msg":"剩余坐庄次数%v"}`, leaveRed-1))
-					}
-					
 					return reports, nil
 				}
 				response = append(response, rs)
