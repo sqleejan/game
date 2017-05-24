@@ -853,7 +853,7 @@ func (r *Room) MasterRedhat(master string) error {
 	// 	"type": "txt",
 	// 	"msg":  fmt.Sprintf("%s[%s] 抢到庄家", nicname, master),
 	// }, map[string]string{})
-	emsay(r.gid, fmt.Sprintf(`{"type":"message","msg":"%s 抢到庄家.请点击连庄按钮配置连庄次数..."}`, nicname))
+	emsay(r.gid, fmt.Sprintf(`{"type":"message","msg":"\"%s\" 抢到庄家.请点击连庄按钮配置连庄次数"}`, nicname))
 	return nil
 }
 
@@ -897,7 +897,7 @@ func (r *Room) ConfigRedhat(rr *RedReq, cancel bool) error {
 	if rr.Number == 1 {
 		r.redhats <- &redhat{
 			//amount:  int(rr.RedAmount * 100),
-			//count:   rr.Diver,
+			count:   1,
 			timeout: time.Duration(r.Timeout) * time.Minute,
 			base:    r.base,
 			end:     true,
@@ -911,7 +911,7 @@ func (r *Room) ConfigRedhat(rr *RedReq, cancel bool) error {
 	for i := 0; i < rr.Number-1; i++ {
 		r.redhats <- &redhat{
 			//amount:  int(rr.RedAmount * 100),
-			//count:   rr.Diver,
+			count:   rr.Number-i,
 			timeout: time.Duration(r.Timeout) * time.Minute,
 			base:    r.base,
 		}
@@ -919,7 +919,7 @@ func (r *Room) ConfigRedhat(rr *RedReq, cancel bool) error {
 
 	r.redhats <- &redhat{
 		//amount:  int(rr.RedAmount * 100),
-		//count:   rr.Diver,
+		count:   1,
 		timeout: time.Duration(r.Timeout) * time.Minute,
 		base:    r.base,
 		end:     true,
@@ -974,8 +974,9 @@ func (r *Room) Diver(master string, req *DiverReq) (*Marks, error) {
 	if req.RedAmount < r.RedDown || req.RedAmount > r.RedUp {
 		return nil, fmt.Errorf("RedAmount overflow")
 	}
-
+	
 	rd := <-r.redhats
+	leaveRed:=rd.count
 	rd.amount = int(req.RedAmount * 100)
 	rd.count = req.Diver
 	r.score = make(chan int, rd.count+1)
@@ -1055,6 +1056,7 @@ func (r *Room) Diver(master string, req *DiverReq) (*Marks, error) {
 				r.redhats <- rd
 				//ticker.Stop()
 				emsay(r.gid, fmt.Sprintf(`{"type":"red","count":%d,"time": "红包超时"}`, leave))
+				emsay(r.gid, fmt.Sprintf(`剩余坐庄次数%v`, leaveRed))
 				fmt.Println("==============diver timeout ticker.C...==============")
 				return nil, fmt.Errorf("%s diver timeout!", redid)
 			}
@@ -1081,7 +1083,7 @@ func (r *Room) Diver(master string, req *DiverReq) (*Marks, error) {
 					// if ok1{
 					// 	nicname=um.NicName
 					// }
-
+					emsay(r.gid, fmt.Sprintf(`剩余坐庄次数%v`, leaveRed-1))
 					return reports, nil
 				}
 				response = append(response, rs)
