@@ -322,7 +322,7 @@ func (u *CattleController) Gain() {
 		u.CustomAbort(500, "the room is not exist")
 		return
 	} else {
-		if !room.IsCustom(mc.Id) && !room.IsAdmin(mc.Id) {
+		if !room.IsCustom(mc.Id) {
 			u.CustomAbort(408, "permission is not allow!")
 			return
 		}
