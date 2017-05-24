@@ -1056,7 +1056,7 @@ func (r *Room) Diver(master string, req *DiverReq) (*Marks, error) {
 				r.redhats <- rd
 				//ticker.Stop()
 				emsay(r.gid, fmt.Sprintf(`{"type":"red","count":%d,"time": "红包超时"}`, leave))
-				emsay(r.gid, fmt.Sprintf(`剩余坐庄次数%v`, leaveRed))
+				emsay(r.gid, fmt.Sprintf(`{"type":"msg","msg":"剩余坐庄次数%v"}`, leaveRed))
 				fmt.Println("==============diver timeout ticker.C...==============")
 				return nil, fmt.Errorf("%s diver timeout!", redid)
 			}
@@ -1083,7 +1083,12 @@ func (r *Room) Diver(master string, req *DiverReq) (*Marks, error) {
 					// if ok1{
 					// 	nicname=um.NicName
 					// }
-					emsay(r.gid, fmt.Sprintf(`剩余坐庄次数%v`, leaveRed-1))
+					if (leaveRed-1)==0{
+						emsay(r.gid, fmt.Sprintf(`{"type":"msg","msg":"本轮坐庄结束"}`))
+					}esle{
+						emsay(r.gid, fmt.Sprintf(`{"type":"msg","msg":"剩余坐庄次数%v"}`, leaveRed-1))
+					}
+					
 					return reports, nil
 				}
 				response = append(response, rs)
