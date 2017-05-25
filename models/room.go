@@ -56,6 +56,7 @@ type Room struct {
 	echo         chan *result
 	results      map[string]*result
 	status       int
+	jushu        int
 	//	gainlimit    int
 	Scope
 }
@@ -845,9 +846,9 @@ func (r *Room) MasterRedhat(master string) error {
 	if u != nil {
 		nicname = u.Nicname
 	}
-	mp,ok:=r.users[master]
-	if ok{
-	    nicname=mp.NicName
+	mp, ok := r.users[master]
+	if ok {
+		nicname = mp.NicName
 	}
 	// cemsdk.SendMessage("admin", "chatgroups", []string{r.id}, map[string]string{
 	// 	"type": "txt",
@@ -911,7 +912,7 @@ func (r *Room) ConfigRedhat(rr *RedReq, cancel bool) error {
 	for i := 0; i < rr.Number-1; i++ {
 		r.redhats <- &redhat{
 			//amount:  int(rr.RedAmount * 100),
-			count:   rr.Number-i,
+			count:   rr.Number - i,
 			timeout: time.Duration(r.Timeout) * time.Minute,
 			base:    r.base,
 		}
@@ -974,9 +975,9 @@ func (r *Room) Diver(master string, req *DiverReq) (*Marks, error) {
 	if req.RedAmount < r.RedDown || req.RedAmount > r.RedUp {
 		return nil, fmt.Errorf("RedAmount overflow")
 	}
-	
+
 	rd := <-r.redhats
-	leaveRed:=rd.count
+	leaveRed := rd.count
 	rd.amount = int(req.RedAmount * 100)
 	rd.count = req.Diver
 	r.score = make(chan int, rd.count+1)
@@ -987,9 +988,9 @@ func (r *Room) Diver(master string, req *DiverReq) (*Marks, error) {
 
 	//传递信息给抢红的用户
 	var mNic string
-	pl,ok:=r.users[master]
-	if ok{
-	   mNic=pl.NicName
+	pl, ok := r.users[master]
+	if ok {
+		mNic = pl.NicName
 	}
 	r.results = make(map[string]*result)
 	r.results["000--"] = &result{
@@ -997,6 +998,7 @@ func (r *Room) Diver(master string, req *DiverReq) (*Marks, error) {
 		score:  rd.amount,
 		bay:    req.Diver,
 	}
+
 	redid := string(Krand(8, 3))
 	r.results["000-+"] = &result{
 		custom: redid,
@@ -1013,8 +1015,8 @@ func (r *Room) Diver(master string, req *DiverReq) (*Marks, error) {
 	// 	custom: master,
 	// 	score:  masterscore,
 	// }}
-
-	emsay(r.gid, fmt.Sprintf(`{"type":"redhat","redid":"%s","nicname":"%s","master":"%s","amount":%v,"diver":%d}`, redid, master, masterNic, req.RedAmount, req.Diver))
+	r.jushu += 1
+	emsay(r.gid, fmt.Sprintf(`{"type":"redhat","redid":"%s","nicname":"%s","master":"%s","amount":%v,"diver":%d,"jushu":%d}`, redid, master, masterNic, req.RedAmount, req.Diver, r.jushu))
 	response := []*result{}
 	r.locker.Lock()
 	r.hasScore = true
@@ -1077,10 +1079,10 @@ func (r *Room) Diver(master string, req *DiverReq) (*Marks, error) {
 					if rd.end {
 						r.redhatClear()
 						emsay(r.gid, `{"type":"message","msg":"本轮坐庄结束"}`)
-					}else{
+					} else {
 						emsay(r.gid, fmt.Sprintf(`{"type":"msg","msg":"剩余坐庄次数%v"}`, leaveRed-1))
 					}
-					
+
 					// nicname:=""
 					// um,ok1:=r.users[master]
 					// if ok1{

@@ -410,6 +410,13 @@ func (r *Room) Fetch() error {
 	if err != nil && err != sql.ErrNoRows {
 		return err
 	}
+
+	redlist := []string{}
+	_, err = trans.Select(&redlist, fmt.Sprintf(`select distinct red_id from %s where  room_id="%d"`, DBRed{}.TableName(), r.id))
+	if err != nil && err != sql.ErrNoRows {
+		return err
+	}
+	r.jushu = len(redlist)
 	r.gid = dbRoom.RoomId
 	r.name = dbRoom.RoomName
 	r.base = dbRoom.Base
@@ -431,6 +438,7 @@ func (r *Room) Fetch() error {
 	r.reqStatus = dbRoom.ReqStatus
 	r.CreateAt = dbRoom.CreateAt
 	r.ActiveAt = dbRoom.ActiveAt
+
 	//	r.describe= dbRoom.Describe
 	r.users = make(map[string]*Player)
 	for i, u := range rlist {
