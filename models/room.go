@@ -1320,10 +1320,9 @@ func (r *Room) juge(rs []*result, base int, water int, master string) []*result 
 			rs[i].score = -rs[i].score
 		}
 		ba := niu(rs[i].score)
-		if ba < masterscore {
+		if ba < masterscore || (masterscore <= 2 && ba == masterscore) {
 			rs[i].bay = -masterscore * base
 			sum += masterscore * base
-
 		}
 		if ba > masterscore {
 			rs[i].bay = ba * base
