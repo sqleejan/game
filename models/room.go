@@ -1067,15 +1067,19 @@ func (r *Room) Diver(master string, req *DiverReq) (*Marks, error) {
 		case rs := <-r.echo:
 			nowcount += 1
 			if rs != nil {
-				if rs.score < 0 {
+				if rs.score < 0 && len(response) >= (req.Diver-1) {
 
 					rs.score = -rs.score
 					response = append(response, rs)
 					r.scoreClear()
+					reports := &Marks{}
+					//if len(response) >= req.Diver {
 					res := r.juge(response, rd.base, r.water, r.redhatMaster)
-					reports := r.makeReport(res, redid)
+					reports = r.makeReport(res, redid)
 					print(reports)
 					Record(r.id, r.name, r.admin, reports, reports.Water)
+					//}
+
 					if rd.end {
 						r.redhatClear()
 						emsay(r.gid, `{"type":"message","msg":"本轮坐庄结束"}`)
@@ -1089,6 +1093,8 @@ func (r *Room) Diver(master string, req *DiverReq) (*Marks, error) {
 					// 	nicname=um.NicName
 					// }
 					return reports, nil
+				} else if len(response) < (req.Diver - 1) {
+					return nil, fmt.Errorf("leave red!")
 				}
 				response = append(response, rs)
 
