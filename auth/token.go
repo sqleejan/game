@@ -94,6 +94,23 @@ func CodeUrl(rid int, ext bool) string {
 	return red
 }
 
+func CodeUrlTest(rid int, ext bool) string {
+	// uri := redirectURI
+	// if rid != "" {
+	// 	uri = uri + "&roomid=" + rid
+	// }
+	roomid := fmt.Sprintf("%d", rid)
+	red := ""
+	if ext {
+		red = oauth2.AuthExtURL(appId, "http://game.highlifes.com/v1/auth/wx/codetest", scope, roomid)
+	} else {
+		red = oauth2.AuthCodeURL(appId, "http://game.highlifes.com/v1/auth/wx/codetest", scope, roomid)
+	}
+
+	fmt.Println(red)
+	return red
+}
+
 func init() {
 	endpoint := oauth2.NewEndpoint(appId, appSecret)
 	wxClient = &authClient.Client{

@@ -46,6 +46,32 @@ func (o *AuthController) WXAuth() {
 
 // @Title 微信认证
 // @Description 微信认证
+// @Param	roomid		query 	int		false		"房间ID"
+// @Success 200 {string} token
+// @router /wx/logintest [get]
+func (o *AuthController) WXAuthTest() {
+	uagent := o.Ctx.Input.Header("User-Agent")
+	fmt.Println(uagent)
+	rid, err := o.GetInt("roomid", 0)
+	if err != nil {
+		o.CustomAbort(407, err.Error())
+		return
+	}
+
+	redirectUrl := auth.CodeUrlTest(rid, false)
+	if !strings.Contains(uagent, "MicroMessenger") {
+		redirectUrl = auth.CodeUrl(rid, true)
+	}
+	o.Redirect(redirectUrl, 302)
+	// var ob auth.MyCustomClaims
+	// json.Unmarshal(o.Ctx.Input.RequestBody, &ob)
+	// ob.ExpiresAt = time.Now().Add(time.Hour * 10).Unix()
+	// o.Data["json"] = ob.Token()
+	// o.ServeJSON()
+}
+
+// @Title 微信认证
+// @Description 微信认证
 // @Param	state		query 	int		false		"房间ID"
 // @Param	code		query 	string		false		"微信code"
 // @Success 200 {string} token
@@ -75,6 +101,47 @@ func (o *AuthController) WXCode() {
 	}
 	fmt.Println("token:", mc.Token())
 	o.Redirect("/fg/redir.html?token="+mc.Token()+fmt.Sprintf("&state=%d", roomid), 302)
+	//o.Data["json"] = mc.Token()
+	//o.ServeJSON()
+
+	// var ob auth.MyCustomClaims
+	// json.Unmarshal(o.Ctx.Input.RequestBody, &ob)
+	// ob.ExpiresAt = time.Now().Add(time.Hour * 10).Unix()
+	// o.Data["json"] = ob.Token()
+	// o.ServeJSON()
+}
+
+// @Title 微信认证
+// @Description 微信认证
+// @Param	state		query 	int		false		"房间ID"
+// @Param	code		query 	string		false		"微信code"
+// @Success 200 {string} token
+// @router /wx/codetest [get]
+func (o *AuthController) WXCodeTest() {
+	roomid, err := o.GetInt("state", 0)
+	if err != nil {
+		o.CustomAbort(407, err.Error())
+		return
+	}
+
+	code := o.GetString("code")
+	fmt.Println("code=", code)
+	if code == "" {
+		o.CustomAbort(405, "weixin auth failed!")
+		return
+	}
+	mc, err := auth.WXClaim(code)
+	if err != nil {
+		o.CustomAbort(405, err.Error())
+		return
+	}
+	_, err = models.CreateDBUser(mc.Id, mc.Audience)
+	if err != nil {
+		o.CustomAbort(500, err.Error())
+		return
+	}
+	fmt.Println("token:", mc.Token())
+	o.Redirect("/new/redir.html?token="+mc.Token()+fmt.Sprintf("&state=%d", roomid), 302)
 	//o.Data["json"] = mc.Token()
 	//o.ServeJSON()
 
