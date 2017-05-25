@@ -589,8 +589,9 @@ func (u *RoomController) RequestList() {
 func print(v interface{}) {
 	if e, ok := v.(error); ok {
 		fmt.Println(e.Error())
+		return
 	}
-	return
+	//return
 	bts, _ := json.MarshalIndent(v, "", " ")
-	fmt.Println(string(bts))
+	fmt.Println("print:", string(bts))
 }
