@@ -1093,7 +1093,7 @@ func (r *Room) Diver(master string, req *DiverReq) (*Marks, error) {
 					// 	nicname=um.NicName
 					// }
 					return reports, nil
-				} else if len(response) < (req.Diver - 1) {
+				} else if rs.score < 0 && len(response) < (req.Diver-1) {
 					return nil, fmt.Errorf("leave red!")
 				}
 				response = append(response, rs)
@@ -1163,16 +1163,18 @@ func (r *Room) GetScore(custom string) (*ScoreUnion, error) {
 	if ok {
 		nicname = pl.NicName
 	}
+	r.locker.Lock()
+	defer r.locker.Unlock()
 	score := <-r.score
 
 	if score < 0 {
-		r.locker.Lock()
+
 		r.echo <- &result{
 			custom: custom,
 			score:  score,
 		}
 		r.hasScore = false
-		r.locker.Unlock()
+		//r.locker.Unlock()
 		res := &ScoreUnion{}
 		res.Score = float32(-score) / 100
 		//获取红信息
@@ -1187,11 +1189,11 @@ func (r *Room) GetScore(custom string) (*ScoreUnion, error) {
 		return res, nil
 		//return -score, nil
 	}
-
 	r.echo <- &result{
 		custom: custom,
 		score:  score,
 	}
+	//r.locker.Unlock()
 	res := &ScoreUnion{}
 	res.Score = float32(score) / 100
 	//获取红信息
