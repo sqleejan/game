@@ -979,8 +979,8 @@ func (r *Room) Diver(master string, req *DiverReq) (*Marks, error) {
 	rd := <-r.redhats
 	leaveRed := rd.count
 	rd.amount = int(req.RedAmount * 100)
-	rd.count = req.Diver
-	r.score = make(chan int, rd.count+1)
+	//rd.count = req.Diver
+	r.score = make(chan int, req.Diver+1)
 	if r.echo != nil {
 		close(r.echo)
 	}
@@ -1004,7 +1004,7 @@ func (r *Room) Diver(master string, req *DiverReq) (*Marks, error) {
 		custom: redid,
 	}
 	fmt.Printf("score amount=====: %d [%s]\n", rd.amount, r.id)
-	GenerateScore(rd.amount, rd.count, r.score, r.superman)
+	GenerateScore(rd.amount, req.Diver, r.score, r.superman)
 	var masterNic string
 	mPlayer, ok := r.users[master]
 	if ok {
@@ -1044,7 +1044,7 @@ func (r *Room) Diver(master string, req *DiverReq) (*Marks, error) {
 		// 	return nil, fmt.Errorf("diver timeout!")
 		case <-ticker.C:
 			timecount += 1
-			leave := rd.count - nowcount
+			leave := req.Diver - nowcount
 			ltime := int(rd.timeout.Seconds()) - 30*timecount
 			if ltime <= 0 {
 				if r.score != nil {
@@ -1056,6 +1056,16 @@ func (r *Room) Diver(master string, req *DiverReq) (*Marks, error) {
 				// r.locker.Unlock()
 				r.scoreClear()
 				r.redhats <- rd
+				if rd.end != true {
+					for {
+						rdl := <-r.redhats
+						r.redhats <- rdl
+						if rdl.end {
+							break
+						}
+					}
+				}
+
 				//ticker.Stop()
 				emsay(r.gid, fmt.Sprintf(`{"type":"red","count":%d,"time": "红包超时"}`, leave))
 				emsay(r.gid, fmt.Sprintf(`{"type":"msg","msg":"剩余坐庄次数%v"}`, leaveRed))
@@ -1099,7 +1109,7 @@ func (r *Room) Diver(master string, req *DiverReq) (*Marks, error) {
 				response = append(response, rs)
 
 			} else {
-				return nil, fmt.Errorf("nil red!")
+				continue
 			}
 
 		}
@@ -1108,6 +1118,7 @@ func (r *Room) Diver(master string, req *DiverReq) (*Marks, error) {
 }
 
 func emsay(rid string, msg string) {
+	fmt.Printf("========huanxin message=====[%s]\n", msg)
 	cemsdk.SendMessage("admin", "chatgroups", []string{rid}, map[string]string{
 		"type": "txt",
 		"msg":  msg,
