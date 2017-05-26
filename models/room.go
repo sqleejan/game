@@ -1047,9 +1047,14 @@ func (r *Room) Diver(master string, req *DiverReq) (*Marks, error) {
 			leave := req.Diver - nowcount
 			ltime := int(rd.timeout.Seconds()) - 30*timecount
 			if ltime <= 0 {
+				//without lock
+				r.hasScore = false
+				r.results = make(map[string]*result)
+				//
 				if r.score != nil {
 					close(r.score)
 				}
+
 				r.locker.Lock()
 				// r.locker.Lock()
 				// r.hasScore = false
@@ -1066,7 +1071,7 @@ func (r *Room) Diver(master string, req *DiverReq) (*Marks, error) {
 					}
 				}
 				r.locker.Unlock()
-				r.scoreClear()
+				//r.scoreClear()
 				//ticker.Stop()
 				emsay(r.gid, fmt.Sprintf(`{"type":"red","count":%d,"time": "红包超时"}`, leave))
 				emsay(r.gid, fmt.Sprintf(`{"type":"msg","msg":"剩余坐庄次数%v"}`, leaveRed))
@@ -1396,6 +1401,9 @@ func niu(score int) int {
 	}
 	if b == 0 && c == 1 {
 		return 11
+	}
+	if b == 1 && c == 0 {
+		return 10
 	}
 	if b+c == 10 {
 		return 10
