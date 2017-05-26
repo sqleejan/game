@@ -1070,7 +1070,7 @@ func (r *Room) Diver(master string, req *DiverReq) (*Marks, error) {
 				//ticker.Stop()
 				emsay(r.gid, fmt.Sprintf(`{"type":"red","count":%d,"time": "红包超时"}`, leave))
 				emsay(r.gid, fmt.Sprintf(`{"type":"msg","msg":"剩余坐庄次数%v"}`, leaveRed))
-				fmt.Println("==============diver timeout ticker.C...==============")
+				//fmt.Println("==============diver timeout ticker.C...==============")
 				return nil, fmt.Errorf("%s diver timeout!", redid)
 			}
 			emsay(r.gid, fmt.Sprintf(`{"type":"red","count":%d,"time": %d }`, leave, ltime))
@@ -1079,7 +1079,9 @@ func (r *Room) Diver(master string, req *DiverReq) (*Marks, error) {
 			nowcount += 1
 			if rs != nil {
 				if rs.score < 0 && len(response) >= (req.Diver-1) {
-
+					if r.score != nil {
+						close(r.score)
+					}
 					rs.score = -rs.score
 					response = append(response, rs)
 					r.scoreClear()
@@ -1105,6 +1107,10 @@ func (r *Room) Diver(master string, req *DiverReq) (*Marks, error) {
 					// }
 					return reports, nil
 				} else if rs.score < 0 && len(response) < (req.Diver-1) {
+					if r.score != nil {
+						close(r.score)
+					}
+					r.scoreClear()
 					return nil, fmt.Errorf("leave red!")
 				}
 				response = append(response, rs)
