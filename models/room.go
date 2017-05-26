@@ -1399,15 +1399,17 @@ func niu(score int) int {
 	if b == c {
 		return 12
 	}
-	if b == 0 && c == 1 {
+	if a != 0 && b == 0 && c == 1 {
 		return 11
 	}
+
 	if b == 1 && c == 0 {
-		return 10
+		return 11
 	}
 	if b+c == 10 {
 		return 10
 	}
+
 	return (b + c) % 10
 }
 
