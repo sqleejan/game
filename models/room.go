@@ -1050,7 +1050,7 @@ func (r *Room) Diver(master string, req *DiverReq) (*Marks, error) {
 				if r.score != nil {
 					close(r.score)
 				}
-
+				r.locker.Lock()
 				// r.locker.Lock()
 				// r.hasScore = false
 				// r.locker.Unlock()
@@ -1065,6 +1065,7 @@ func (r *Room) Diver(master string, req *DiverReq) (*Marks, error) {
 						}
 					}
 				}
+				r.locker.Unlock()
 				r.scoreClear()
 				//ticker.Stop()
 				emsay(r.gid, fmt.Sprintf(`{"type":"red","count":%d,"time": "红包超时"}`, leave))
