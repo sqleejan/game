@@ -1098,6 +1098,8 @@ func (r *Room) Diver(master string, req *DiverReq) (*Marks, error) {
 				}
 				response = append(response, rs)
 
+			} else {
+				return nil, fmt.Errorf("nil red!")
 			}
 
 		}
