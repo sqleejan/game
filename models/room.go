@@ -1054,7 +1054,7 @@ func (r *Room) Diver(master string, req *DiverReq) (*Marks, error) {
 				// r.locker.Lock()
 				// r.hasScore = false
 				// r.locker.Unlock()
-				r.scoreClear()
+
 				r.redhats <- rd
 				if rd.end != true {
 					for {
@@ -1065,7 +1065,7 @@ func (r *Room) Diver(master string, req *DiverReq) (*Marks, error) {
 						}
 					}
 				}
-
+				r.scoreClear()
 				//ticker.Stop()
 				emsay(r.gid, fmt.Sprintf(`{"type":"red","count":%d,"time": "红包超时"}`, leave))
 				emsay(r.gid, fmt.Sprintf(`{"type":"msg","msg":"剩余坐庄次数%v"}`, leaveRed))
@@ -1178,7 +1178,10 @@ func (r *Room) GetScore(custom string) (*ScoreUnion, error) {
 	}
 	r.locker.Lock()
 	defer r.locker.Unlock()
-	score := <-r.score
+	score, isOk := <-r.score
+	if !isOk {
+		return nil, fmt.Errorf("have no score")
+	}
 
 	if score < 0 {
 
