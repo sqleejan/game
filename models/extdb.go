@@ -1,7 +1,12 @@
 package models
 
 import (
+	"bytes"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"strconv"
+	"sync"
 	"time"
 )
 
@@ -103,7 +108,7 @@ type DBRed struct {
 	CreateAt time.Time `db:"create_at" json:"create_at"`
 	RedId    string    `db:"red_id" json:"red_id"`
 	RoomId   int       `db:"room_id" json:"room_id"`
-	Score    float32   `db:"score" json:"score"`
+	Score    string    `db:"score" json:"score"`
 	NicName  string    `db:"nick_name" json:"nicname"`
 }
 
@@ -116,7 +121,7 @@ func (red *DBRed) Insert() error {
 	return dBEngine.Insert(red)
 }
 
-func RedInsert(roomid int, redid string, uid string, nicname string, score float32) error {
+func RedInsert(roomid int, redid string, uid string, nicname string, score string) error {
 	dbred := &DBRed{
 		UserId:  uid,
 		RedId:   redid,
@@ -134,14 +139,94 @@ func RedList(roomid int, redid string) ([]*DBRed, error) {
 	if err != nil {
 		return nil, err
 	}
-	for i,rl:=range res{
-		num:=int(rl.Score*1000)
-		cnum:=num/10
-		wc:=num%10
-		if wc>5{
-		  cnum+=1
-		}
-		res[i].Score=float32(cnum)/100
-	}
 	return res, nil
+}
+
+type UpdateInfo struct {
+	MSG string
+}
+
+var filelock sync.RWMutex
+
+func InfoUpdate(msg string) error {
+	filelock.Lock()
+	defer filelock.Unlock()
+	f, err := os.Create(".amsg")
+	if err != nil {
+		return err
+	}
+	_, err = f.WriteString(msg)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func ReadInfo() string {
+	filelock.RLock()
+	defer filelock.RUnlock()
+	msg, err := ioutil.ReadFile(".amsg")
+	if err != nil {
+		return ""
+	}
+	return string(msg)
+}
+
+var idfilelock sync.RWMutex
+
+func idUp() (int, error) {
+	idfilelock.Lock()
+	defer idfilelock.Unlock()
+	fid, err := ioutil.ReadFile(".roomid")
+	if err != nil {
+		return 0, err
+	}
+	fid = bytes.TrimSpace(fid)
+	id, err := strconv.Atoi(string(fid))
+	if err != nil {
+		return 0, err
+	}
+	id += 1
+	err = ioutil.WriteFile(".roomid", []byte(strconv.Itoa(id)), 0777)
+	if err != nil {
+		return 0, err
+	}
+	return id, nil
+}
+
+func FilesInit() error {
+	fi, err := os.Stat(".roomid")
+	if err != nil {
+		if err == os.ErrNotExist {
+			errs := ioutil.WriteFile(".roomid", []byte(strconv.Itoa(0)), 0777)
+			if errs != nil {
+				return err
+			}
+		} else {
+			return err
+		}
+
+	}
+	if fi.IsDir() {
+		return fmt.Errorf("not dir")
+	}
+
+	mfi, err := os.Stat(".amsg")
+	if err != nil {
+		if err == os.ErrNotExist {
+			errs := ioutil.WriteFile(".amsg", []byte(`管理员信息`), 0777)
+			if errs != nil {
+				return err
+			}
+		} else {
+			return err
+		}
+
+	}
+	if mfi.IsDir() {
+		return fmt.Errorf("not dir")
+	}
+
+	return nil
 }

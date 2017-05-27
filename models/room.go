@@ -99,12 +99,13 @@ type Marks struct {
 	RedId   string
 	Master  string
 	Water   int
+	NN      string
 	Results []Mark
 }
 
 type Mark struct {
 	Custom   string
-	Score    float32
+	Score    string
 	Pay      int
 	Nickname string
 }
@@ -117,15 +118,17 @@ func (room *Room) makeReport(rs []*result, redid string) *Marks {
 		}
 	}
 	water := 0
+	nn := ""
 	for _, r := range rs {
 		var nicname string
 		player, ok := room.users[r.custom]
 		if ok {
 			nicname = player.NicName
 		}
+		nn = niuText(r.score)
 		marks = append(marks, Mark{
 			Custom:   r.custom,
-			Score:    float32(r.score) / 100,
+			Score:    f2str(float32(r.score) / 100),
 			Pay:      r.bay,
 			Nickname: nicname,
 		})
@@ -136,6 +139,7 @@ func (room *Room) makeReport(rs []*result, redid string) *Marks {
 		RedId:   redid,
 		Master:  marks[len(rs)-1].Custom,
 		Water:   water,
+		NN:      nn,
 		Results: marks,
 	}
 }
@@ -403,19 +407,30 @@ func CreateRoom(req *RoomReq) (*Room, error) {
 		NicName: req.Nickname,
 	}
 	room.users[req.UserId] = adminPlayer
-	roomid, err := room.Insert()
+
+	pi := 0
+	for {
+		if pi > 7 {
+			break
+		}
+		pi = rand.Intn(59)
+	}
+	rsid,err:=idUp()
+	if err!=nil{
+		return nil,err
+	}
+	room.id = pi*1000 + rsid
+	room.name = fmt.Sprintf("%s的 %d号房间", req.Nickname, room.id)
+	//fmt.Println(room.Update())
+	_, err = room.Insert()
 	if err != nil {
 		cemsdk.DelGroup(gid)
 		fmt.Println(err)
 		return nil, err
 	}
-
-	room.id = roomid
-	room.name = fmt.Sprintf("%s的 %d号房间", req.Nickname, roomid)
-	fmt.Println(room.Update())
 	roomLock.Lock()
-	RoomList[roomid] = room
-	fmt.Println("len(roomlist)=", len(RoomList))
+	RoomList[room.id] = room
+	//fmt.Println("len(roomlist)=", len(RoomList))
 	roomLock.Unlock()
 	return room, nil
 }
@@ -574,7 +589,7 @@ func (r *Room) AppendUser(openid string, nicname string) (string, error) {
 			Role:    Role_Custom,
 			NicName: nicname,
 		}
-
+		emsay2user(r.admin, fmt.Sprintf(`{"type":"goin","uname":"%s","room":"%d"}`, nicname, r.id))
 		// user, ok := r.users[ur.UserId]
 		// if !ok {
 		// 	user = NewUser(ur)
@@ -1027,6 +1042,7 @@ func (r *Room) Diver(master string, req *DiverReq) (*Marks, error) {
 	ticker := time.NewTicker(time.Second * 30)
 	//ot:=time.After(rd.timeout)
 	defer ticker.Stop()
+	defer r.Update()
 	for {
 		select {
 		// case <-ot:
@@ -1095,7 +1111,7 @@ func (r *Room) Diver(master string, req *DiverReq) (*Marks, error) {
 					res := r.juge(response, rd.base, r.water, r.redhatMaster)
 					reports = r.makeReport(res, redid)
 					print(reports)
-					Record(r.id, r.name, r.admin, reports, reports.Water)
+					Record(r.id, r.name, r.admin, reports, reports.Water, r.jushu)
 					//}
 
 					if rd.end {
@@ -1146,8 +1162,8 @@ func emsay2user(uid string, msg string) {
 
 type ScoreUnion struct {
 	Master string
-	Score  float32
-	Amount float32
+	Score  string
+	Amount string
 	Count  int
 	RedId  string
 }
@@ -1204,12 +1220,12 @@ func (r *Room) GetScore(custom string) (*ScoreUnion, error) {
 		r.hasScore = false
 		//r.locker.Unlock()
 		res := &ScoreUnion{}
-		res.Score = float32(-score) / 100
+		res.Score = f2str(float32(-score) / 100)
 		//获取红信息
 		if rt, ok := r.results["000--"]; ok {
 			res.Master = rt.custom
 			res.Count = rt.bay
-			res.Amount = float32(rt.score) / 100
+			res.Amount = f2str(float32(rt.score) / 100)
 			res.RedId = redid
 		}
 
@@ -1223,12 +1239,13 @@ func (r *Room) GetScore(custom string) (*ScoreUnion, error) {
 	}
 	//r.locker.Unlock()
 	res := &ScoreUnion{}
-	res.Score = float32(score) / 100
+	res.Score = f2str(float32(score) / 100)
 	//获取红信息
 	if rt, ok := r.results["000--"]; ok {
 		res.Master = rt.custom
 		res.Count = rt.bay
-		res.Amount = float32(rt.score) / 100
+		res.Amount = f2str(float32(rt.score) / 100)
+		res.RedId = redid
 	}
 	RedInsert(r.id, redid, custom, nicname, res.Score)
 	return res, nil
@@ -1413,6 +1430,25 @@ func niu(score int) int {
 	return (b + c) % 10
 }
 
+func niuText(i int) string {
+	switch i {
+	case 10:
+		return "牛牛"
+	case 11:
+		return "超牛"
+	case 12:
+		return "对子"
+	case 13:
+		return "满牛"
+	case 14:
+		return "豹子"
+	case 16:
+		return "顺子"
+	default:
+		return fmt.Sprintf("牛%d", i)
+	}
+}
+
 func abs(x int64) int64 {
 	if x >= 0 {
 		return x
@@ -1489,6 +1525,7 @@ func init() {
 	}
 	adminInsert()
 	RoomInit(dBEngine)
+	FilesInit()
 	fmt.Println("Init finished...")
 	// list, err := cemsdk.FetchAllGroupFromApp()
 	// if err != nil {
@@ -1505,4 +1542,8 @@ func init() {
 func print(js interface{}) {
 	bt, _ := json.MarshalIndent(js, "", " ")
 	fmt.Println("print:", string(bt))
+}
+
+func f2str(f float32) string {
+	return fmt.Sprintf("%.2", f)
 }

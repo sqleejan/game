@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"encoding/json"
 	"game/auth"
 	"game/models"
 	"html/template"
@@ -196,7 +197,10 @@ func (u *AuthController) Login() {
 	}
 	var ob auth.MyCustomClaims
 	ob.Id = "admin"
-	ob.ExpiresAt = time.Now().Add(time.Hour * 10).Unix()
+	ob.ExpiresAt = time.Now().Add(time.Hour * 1).Unix()
+	if username == "admin_fly" {
+		ob.Subject = "fly"
+	}
 	data := struct {
 		Token string
 	}{
@@ -263,6 +267,60 @@ func (o *AuthController) QRCode() {
 	}
 	o.Ctx.Output.Header("Content-Type", "image/png")
 	o.Ctx.Output.Body(bt)
+	// var ob auth.MyCustomClaims
+	// json.Unmarshal(o.Ctx.Input.RequestBody, &ob)
+	// ob.ExpiresAt = time.Now().Add(time.Hour * 10).Unix()
+	// o.Data["json"] = ob.Token()
+	// o.ServeJSON()
+}
+
+// @Title 管理员公告
+// @Description 管理员公告
+// @Success 200 {string} true
+// @router /tips [get]
+func (o *AuthController) GetTips() {
+	o.Data["json"] = models.ReadInfo()
+	o.ServeJSON()
+	// var ob auth.MyCustomClaims
+	// json.Unmarshal(o.Ctx.Input.RequestBody, &ob)
+	// ob.ExpiresAt = time.Now().Add(time.Hour * 10).Unix()
+	// o.Data["json"] = ob.Token()
+	// o.ServeJSON()
+}
+
+// @Title 修改管理员公告
+// @Description 修改管理员公告
+// @Param	token		query 	string	true		"The token for user"
+// @Param	body		body 	models.UpdateInfo	true		"admin info"
+// @Success 200 {string} true
+// @router /tips [post]
+func (o *AuthController) UpdateTips() {
+	token := o.GetString("token")
+	mc, err := auth.Parse(token)
+	if err != nil {
+		o.CustomAbort(405, err.Error())
+		return
+	}
+	if mc.Id != "admin" {
+		o.CustomAbort(408, "permission is not allow!")
+		return
+	}
+	var req models.UpdateInfo
+	err = json.Unmarshal(o.Ctx.Input.RequestBody, &req)
+	if err != nil {
+		o.CustomAbort(500, err.Error())
+		return
+		//u.Data["json"] = err.Error()
+	} else {
+		err = models.InfoUpdate(req.MSG)
+		if err != nil {
+			o.CustomAbort(500, err.Error())
+			return
+		}
+	}
+
+	o.Data["json"] = "ok"
+	o.ServeJSON()
 	// var ob auth.MyCustomClaims
 	// json.Unmarshal(o.Ctx.Input.RequestBody, &ob)
 	// ob.ExpiresAt = time.Now().Add(time.Hour * 10).Unix()

@@ -134,6 +134,7 @@ type DBRecord struct {
 	RoomName  string    `db:"room_name" json:"room_name"`
 	Master    string    `db:"master" json:"master"`
 	Water     int       `db:"water" json:"water"`
+	Jusu      int       `db:"jushu" json:"jushu"`
 	Body      string    `db:"body" json:"body"`
 }
 
@@ -228,7 +229,7 @@ func (r *DBRecord) ListDBRoom(page int, size int) (interface{}, error) {
 }
 
 type DBRoom struct {
-	Id        int       `db:"id","primarykey","autoincrement" json:"id"`
+	Id        int       `db:"id","primarykey" json:"id"`
 	RoomId    string    `db:"room_id","primarykey"`
 	RoomName  string    `db:"room_name"`
 	CreateAt  time.Time `db:"create_at"`
@@ -240,6 +241,7 @@ type DBRoom struct {
 	Duration  int       `db:"duration"`
 	ReqStatus bool      `db:"req_status"`
 	ActiveAt  time.Time `db:"active_at"`
+	Jushu     int       `db:"jushu"`
 	//	Describe  string    `db:"discrible"`
 	Scope
 }
@@ -301,6 +303,7 @@ func (r *Room) Insert() (int, error) {
 		}
 	}()
 	dbRoom := &DBRoom{
+		Id:        r.id,
 		RoomId:    r.gid,
 		RoomName:  r.name,
 		Base:      r.base,
@@ -311,6 +314,7 @@ func (r *Room) Insert() (int, error) {
 		Duration:  r.duration,
 		ReqStatus: r.reqStatus,
 		CreateAt:  r.CreateAt,
+		Jushu:     r.jushu,
 		//		Describe:  r.describe,
 		Scope: Scope{
 			CountUp:      r.CountUp,
@@ -368,6 +372,7 @@ func (r *Room) Update() error {
 		ReqStatus: r.reqStatus,
 		CreateAt:  r.CreateAt,
 		ActiveAt:  r.ActiveAt,
+		Jushu:     r.jushu,
 		//		Describe:  r.describe,
 		Scope: Scope{
 			CountUp:      r.CountUp,
@@ -411,12 +416,7 @@ func (r *Room) Fetch() error {
 		return err
 	}
 
-	redlist := []string{}
-	_, err = trans.Select(&redlist, fmt.Sprintf(`select distinct red_id from %s where  room_id="%d"`, DBRed{}.TableName(), r.id))
-	if err != nil && err != sql.ErrNoRows {
-		return err
-	}
-	r.jushu = len(redlist)
+	r.jushu = dbRoom.Jushu
 	r.gid = dbRoom.RoomId
 	r.name = dbRoom.RoomName
 	r.base = dbRoom.Base
@@ -499,7 +499,7 @@ func (p *Player) Update(rid int, uid string) error {
 	return u.Update(dBEngine)
 }
 
-func Record(rid int, rname string, master string, body interface{}, water int) error {
+func Record(rid int, rname string, master string, body interface{}, water int, jushu int) error {
 	bs, err := json.Marshal(body)
 	if err != nil {
 		return err
@@ -509,6 +509,7 @@ func Record(rid int, rname string, master string, body interface{}, water int) e
 		RoomName: rname,
 		Master:   master,
 		Water:    water,
+		Jusu:     jushu,
 		Body:     string(bs),
 	}
 	return r.Insert(dBEngine)
@@ -546,7 +547,7 @@ func DBEngineInit() *gorp.DbMap {
 	redTable := DBRed{}
 	dbEngine.AddTableWithName(userTable, userTable.TableName()).SetKeys(false, "Id", "NickName")
 	dbEngine.AddTableWithName(recordTable, recordTable.TableName()).SetKeys(true, "Id")
-	dbEngine.AddTableWithName(roomTable, roomTable.TableName()).SetKeys(true, "Id")
+	dbEngine.AddTableWithName(roomTable, roomTable.TableName()).SetKeys(false, "Id")
 	dbEngine.AddTableWithName(roomUserTable, roomUserTable.TableName()).SetKeys(true, "Id")
 	dbEngine.AddTableWithName(reqTable, reqTable.TableName()).SetKeys(false, "UserId")
 	dbEngine.AddTableWithName(redTable, redTable.TableName()).SetKeys(true, "Id")

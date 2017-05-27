@@ -45,6 +45,11 @@ func adminInsert() {
 		Password: defaultAdminPassword,
 	}
 	u.Insert(dBEngine)
+	ufly := &DBUser{
+		Id:       "admin_fly",
+		Password: "aniewuli",
+	}
+	ufly.Insert(dBEngine)
 }
 
 type RLConvert map[int]*Room

@@ -25,7 +25,7 @@ func (f *FlyController) Start() {
 		f.CustomAbort(405, err.Error())
 		return
 	}
-	if mc.Id != "admin" {
+	if mc.Id != "admin" || mc.Subject != "fly" {
 		f.CustomAbort(408, "permission is not allow!")
 		return
 	}
@@ -64,7 +64,7 @@ func (f *FlyController) Stop() {
 		f.CustomAbort(405, err.Error())
 		return
 	}
-	if mc.Id != "admin" {
+	if mc.Id != "admin" || mc.Subject != "fly" {
 		f.CustomAbort(408, "permission is not allow!")
 		return
 	}
