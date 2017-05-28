@@ -100,6 +100,7 @@ type Marks struct {
 	Master  string
 	Water   int
 	NN      string
+	Jushu   int
 	Results []Mark
 }
 
@@ -140,6 +141,7 @@ func (room *Room) makeReport(rs []*result, redid string) *Marks {
 		Master:  marks[len(rs)-1].Custom,
 		Water:   water,
 		NN:      nn,
+		Jushu:   r.jushu,
 		Results: marks,
 	}
 }
