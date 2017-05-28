@@ -125,7 +125,7 @@ func (room *Room) makeReport(rs []*result, redid string) *Marks {
 		if ok {
 			nicname = player.NicName
 		}
-		nn = niuText(r.score)
+		nn = niuText(niu(r.score))
 		marks = append(marks, Mark{
 			Custom:   r.custom,
 			Score:    f2str(float32(r.score) / 100),
@@ -415,9 +415,9 @@ func CreateRoom(req *RoomReq) (*Room, error) {
 		}
 		pi = rand.Intn(59)
 	}
-	rsid,err:=idUp()
-	if err!=nil{
-		return nil,err
+	rsid, err := idUp()
+	if err != nil {
+		return nil, err
 	}
 	room.id = pi*1000 + rsid
 	room.name = fmt.Sprintf("%s的 %d号房间", req.Nickname, room.id)
@@ -1545,5 +1545,5 @@ func print(js interface{}) {
 }
 
 func f2str(f float32) string {
-	return fmt.Sprintf("%.2", f)
+	return fmt.Sprintf("%.2f", f)
 }
