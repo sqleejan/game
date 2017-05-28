@@ -141,7 +141,7 @@ func (room *Room) makeReport(rs []*result, redid string) *Marks {
 		Master:  marks[len(rs)-1].Custom,
 		Water:   water,
 		NN:      nn,
-		Jushu:   r.jushu,
+		Jushu:   room.jushu,
 		Results: marks,
 	}
 }
