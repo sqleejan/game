@@ -686,7 +686,7 @@ func (r *Room) ActiveUser(openid string, req *UserActiveReq) error {
 			// 	"msg":  fmt.Sprintf("玩家%s 加入房间", player.NicName),
 			// }, map[string]string{})
 			emsay(r.gid, fmt.Sprintf(`[{"type":"join"},{"user":"%s"},{"num":%d}]`, player.NicName, count))
-			emsay2user(openid, `[{"type":"active"},{"active":1}]`)
+			emsay2user(openid, fmt.Sprintf(`[{"type":"active"},{"active":1},{"room":%d}]`, r.id))
 
 		} else {
 			if player.Active != req.Active {
@@ -747,10 +747,10 @@ func (r *Room) Assistant(uid string, role int) error {
 		// }
 		_, ok := r.users[uid]
 		if !ok || r.users[uid].Role == Role_Admin {
-			return fmt.Errorf("%s is not in Room: %s", uid, r.id)
+			return fmt.Errorf("%s is not in Room: %d", uid, r.id)
 		}
 		r.users[uid].Role = role
-		emsay2user(uid, fmt.Sprintf(`[{"type":"role"},{"room":"%s"},{"role":%d}]`, r.id, role))
+		emsay2user(uid, fmt.Sprintf(`[{"type":"role"},{"room":"%d"},{"role":%d}]`, r.id, role))
 		return nil
 	}
 	return fmt.Errorf("room is disable")
