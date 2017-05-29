@@ -10,10 +10,15 @@ type HuiZong struct {
 	NicName  string
 	ScoreSum int
 	LenUsers int
-	Users    []Player
+	Users    []PPlayer
 }
 
-type sortPlayer []Player
+type PPlayer struct {
+	Player
+	PaiMing int
+}
+
+type sortPlayer []PPlayer
 
 func (su sortPlayer) Less(i, j int) bool {
 	return su[i].Score > su[j].Score
@@ -44,10 +49,20 @@ func (r *Room) Hui(master string) (HuiZong, error) {
 
 		if r.users[key].Score != 0 {
 			huizong.ScoreSum += r.users[key].Score
-			huizong.Users = append(huizong.Users, *(r.users[key]))
+			huizong.Users = append(huizong.Users, PPlayer{*(r.users[key]), 0})
 		}
 	}
 
+	lenu := len(huizong.Users)
+
 	sort.Sort(sortPlayer(huizong.Users))
+	for i, v := range huizong.Users {
+		if v.Score > 0 {
+			huizong.Users[i].PaiMing = i + 1
+		} else {
+			huizong.Users[i].PaiMing = i + 1 + huizong.LenUsers - lenu
+		}
+
+	}
 	return huizong, nil
 }
