@@ -595,3 +595,46 @@ func print(v interface{}) {
 	bts, _ := json.MarshalIndent(v, "", " ")
 	fmt.Println("print:", string(bts))
 }
+
+// @Title 积分汇总
+// @Description 积分汇总
+// @Param	token		query 	string	true		"The token for user"
+// @Param	master		query 	string	true		"庄家ID"
+// @Param	roomid		path 	int		true		"The key for staticblock"
+// @Success 200 {object} models.TmpRespone
+// @Failure 403 :roomid is empty
+// @router /:roomid／score [get]
+func (u *RoomController) ScoreList() {
+	token := u.GetString("token")
+	mc, err := auth.Parse(token)
+	if err != nil {
+		u.CustomAbort(405, err.Error())
+		return
+	}
+	roomid, err := u.GetInt(":roomid", 0)
+	if err != nil {
+		u.CustomAbort(407, err.Error())
+		return
+	}
+
+	if roomid != 0 {
+		room, ok := models.RoomList[roomid]
+		if !ok {
+			u.CustomAbort(500, "the room is not exist")
+			return
+		} else {
+			if !room.IsAnyone(mc.Id) && mc.Id != "admin" {
+				u.CustomAbort(408, "permission is not allow!")
+				return
+			}
+			//print(room.Convert())
+			res, err := room.Hui(u.GetString("master"))
+			if err != nil {
+				u.CustomAbort(500, err.Error())
+				return
+			}
+			u.Data["json"] = res
+		}
+	}
+	u.ServeJSON()
+}
