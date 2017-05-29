@@ -603,7 +603,7 @@ func print(v interface{}) {
 // @Param	roomid		path 	int		true		"The key for staticblock"
 // @Success 200 {object} models.TmpRespone
 // @Failure 403 :roomid is empty
-// @router /:roomid／score [get]
+// @router /:roomid/score [get]
 func (u *RoomController) ScoreList() {
 	token := u.GetString("token")
 	mc, err := auth.Parse(token)
