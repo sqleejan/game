@@ -40,7 +40,7 @@ func (u *UserController) Join() {
 		return
 	} else {
 
-		if hxtoken, err := room.AppendUser(mc.Id, mc.Audience); err != nil {
+		if hxtoken, err := room.AppendUser(mc.Id, mc.Audience, mc.Issuer); err != nil {
 			u.CustomAbort(500, err.Error())
 			return
 		} else {

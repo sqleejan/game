@@ -565,7 +565,7 @@ func (r *Room) IsAnyone(uid string) bool {
 	return ok && u.Active
 }
 
-func (r *Room) AppendUser(openid string, nicname string) (string, error) {
+func (r *Room) AppendUser(openid string, nicname string, head string) (string, error) {
 	if r.Active() {
 
 		token, err := GetToken(openid)
@@ -590,6 +590,7 @@ func (r *Room) AppendUser(openid string, nicname string) (string, error) {
 		r.users[openid] = &Player{
 			Role:    Role_Custom,
 			NicName: nicname,
+			Head:    head,
 		}
 		emsay2user(r.admin, fmt.Sprintf(`{"type":"goin","uname":"%s","room":"%d"}`, nicname, r.id))
 		// user, ok := r.users[ur.UserId]
