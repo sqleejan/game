@@ -581,6 +581,9 @@ func (r *Room) AppendUser(openid string, nicname string, head string) (string, e
 		}
 		_, ok := r.users[openid]
 		if ok {
+			if r.users[openid].NicName == "" {
+				r.users[openid].NicName = nicname
+			}
 			//r.users[openid].NicName = nicname
 			r.users[openid].Head = head
 			return token, nil
