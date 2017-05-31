@@ -32,8 +32,8 @@ type Player struct {
 	Role    int    `db:"role"`
 	Score   int    `db:"score"`
 	NicName string `db:"nickname"`
-	Head    string
-	Active  bool `db:"active"`
+	Head    string `db:"head"`
+	Active  bool   `db:"active"`
 }
 
 type UserReq struct {
