@@ -10,6 +10,8 @@ import (
 
 	"sort"
 
+	"encoding/base64"
+
 	"gopkg.in/gorp.v1"
 )
 
@@ -196,6 +198,9 @@ func (r *DBRecord) List(db gorp.SqlExecutor, page int, size int) (interface{}, e
 	}
 	resp.Data = list[start:end]
 	resp.Sum = -sum
+	for i := range resp.Data {
+		resp.Data[i].Body = decodeNic(resp.Data[i].Body)
+	}
 	return resp, nil
 }
 
@@ -339,6 +344,7 @@ func (r *Room) Insert() (int, error) {
 			RoomId: dbRoom.Id,
 			Player: *player,
 		}
+		ruser.NicName = encodeNic(ruser.NicName)
 		err = ruser.Insert(trans)
 		if err != nil {
 			return 0, err
@@ -442,6 +448,7 @@ func (r *Room) Fetch() error {
 	//	r.describe= dbRoom.Describe
 	r.users = make(map[string]*Player)
 	for i, u := range rlist {
+		rlist[i].Player.NicName = decodeNic(rlist[i].Player.NicName)
 		r.users[u.Uid] = &(rlist[i].Player)
 	}
 	if p, ok := r.users[r.admin]; ok {
@@ -483,6 +490,7 @@ func (p *Player) Insert(rid int, uid string) error {
 		Uid:    uid,
 		Player: *p,
 	}
+	u.NicName = encodeNic(u.NicName)
 	return u.Insert(dBEngine)
 }
 
@@ -496,6 +504,7 @@ func (p *Player) Update(rid int, uid string) error {
 		return err
 	}
 	u.Player = *p
+	u.NicName = encodeNic(u.NicName)
 	return u.Update(dBEngine)
 }
 
@@ -510,7 +519,7 @@ func Record(rid int, rname string, master string, body interface{}, water int, j
 		Master:   master,
 		Water:    water,
 		Jusu:     jushu,
-		Body:     string(bs),
+		Body:     encodeNic(string(bs)),
 	}
 	return r.Insert(dBEngine)
 }
@@ -590,4 +599,16 @@ func CheckAndCommit(db *gorp.Transaction, err *error) {
 	} else {
 		db.Rollback()
 	}
+}
+
+func encodeNic(nic string) string {
+	return base64.StdEncoding.EncodeToString([]byte(nic))
+}
+
+func decodeNic(nic string) string {
+	bat, err := base64.StdEncoding.DecodeString(nic)
+	if err != nil {
+		return nic
+	}
+	return string(bat)
 }
