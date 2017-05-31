@@ -41,7 +41,7 @@ func (u *RoomController) Post() {
 			u.CustomAbort(408, "permission is not allow!")
 			return
 		}
-
+		req.RoomName = mc.Issuer
 		print(req)
 		room, err := models.CreateRoom(&req)
 		if err != nil {

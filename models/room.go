@@ -407,6 +407,7 @@ func CreateRoom(req *RoomReq) (*Room, error) {
 		Active:  true,
 		Score:   0,
 		NicName: req.Nickname,
+		Head:    req.RoomName,
 	}
 	room.users[req.UserId] = adminPlayer
 
@@ -575,6 +576,11 @@ func (r *Room) AppendUser(openid string, nicname string, head string) (string, e
 		}
 		_, ok := r.users[openid]
 		if ok {
+			r.users[openid] = &Player{
+				Role:    Role_Custom,
+				NicName: nicname,
+				Head:    head,
+			}
 			return token, nil
 		}
 		// if token == "" {
