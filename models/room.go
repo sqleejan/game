@@ -360,6 +360,11 @@ func CreateRoom(req *RoomReq) (*Room, error) {
 	if len(RoomList) > 1000 {
 		return nil, fmt.Errorf("the number of rooms overflow!")
 	}
+	for _, rm := range RoomList {
+		if rm.reqStatus && req.UserId == rm.admin {
+			return nil, fmt.Errorf("you have room %d in request", rm.id)
+		}
+	}
 	gid, err := cemsdk.AddGroup(req.RoomName, "", req.UserId, true, false, req.UserLimit, nil)
 	if err != nil {
 		return nil, err
