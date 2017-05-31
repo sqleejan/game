@@ -84,11 +84,11 @@ func CodeUrl(rid int, ext bool) string {
 	// }
 	roomid := fmt.Sprintf("%d", rid)
 	red := ""
-	if ext {
-		red = oauth2.AuthExtURL(appId, redirectURI, scope, roomid)
-	} else {
-		red = oauth2.AuthCodeURL(appId, redirectURI, scope, roomid)
-	}
+	// if ext {
+	// 	red = oauth2.AuthExtURL(appId, redirectURI, scope, roomid)
+	// } else {
+	red = oauth2.AuthCodeURL(appId, redirectURI, scope, roomid)
+	// }
 
 	fmt.Println(red)
 	return red

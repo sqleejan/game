@@ -139,7 +139,7 @@ func RedList(roomid int, redid string) ([]*DBRed, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	room, ok := RoomList[roomid]
 	if ok {
 		for i, red := range res {
@@ -149,7 +149,7 @@ func RedList(roomid int, redid string) ([]*DBRed, error) {
 			}
 		}
 	}
-	
+
 	return res, nil
 }
 
