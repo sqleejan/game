@@ -136,6 +136,10 @@ func RedList(roomid int, redid string) ([]*DBRed, error) {
 	res := []*DBRed{}
 	query := fmt.Sprintf(`select * from db_red where room_id=? and red_id=?`)
 	_, err := dBEngine.Select(&res, query, roomid, redid)
+	if err != nil {
+		return nil, err
+	}
+	
 	room, ok := RoomList[roomid]
 	if ok {
 		for i, red := range res {
@@ -145,9 +149,7 @@ func RedList(roomid int, redid string) ([]*DBRed, error) {
 			}
 		}
 	}
-	if err != nil {
-		return nil, err
-	}
+	
 	return res, nil
 }
 
