@@ -579,10 +579,10 @@ func (r *Room) AppendUser(openid string, nicname string, head string) (string, e
 			fmt.Println("huanxin:", err)
 			return "", err
 		}
-		_, ok := r.users[openid]
+		us, ok := r.users[openid]
 		if ok {
 			r.users[openid] = &Player{
-				Role:    Role_Custom,
+				Role:    us.Role,
 				NicName: nicname,
 				Head:    head,
 			}
