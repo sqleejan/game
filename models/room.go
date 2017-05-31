@@ -579,10 +579,10 @@ func (r *Room) AppendUser(openid string, nicname string, head string) (string, e
 			fmt.Println("huanxin:", err)
 			return "", err
 		}
-		us, ok := r.users[openid]
+		_, ok := r.users[openid]
 		if ok {
-			r.users[openid].NicName=nicname
-			r.users[openid].Head=head
+			r.users[openid].NicName = nicname
+			r.users[openid].Head = head
 			return token, nil
 		}
 		// if token == "" {
