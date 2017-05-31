@@ -581,11 +581,8 @@ func (r *Room) AppendUser(openid string, nicname string, head string) (string, e
 		}
 		us, ok := r.users[openid]
 		if ok {
-			r.users[openid] = &Player{
-				Role:    us.Role,
-				NicName: nicname,
-				Head:    head,
-			}
+			r.users[openid].NicName=nicname
+			r.users[openid].Head=head
 			return token, nil
 		}
 		// if token == "" {
