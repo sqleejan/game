@@ -310,7 +310,7 @@ func (r *Room) Insert() (int, error) {
 	dbRoom := &DBRoom{
 		Id:        r.id,
 		RoomId:    r.gid,
-		RoomName:  r.name,
+		RoomName:  encodeNic(r.name),
 		Base:      r.base,
 		Water:     r.water,
 		Admin:     r.admin,
@@ -368,7 +368,7 @@ func (r *Room) Update() error {
 	dbRoom := &DBRoom{
 		Id:        r.id,
 		RoomId:    r.gid,
-		RoomName:  r.name,
+		RoomName:  encodeNic(r.name),
 		Base:      r.base,
 		Water:     r.water,
 		Admin:     r.admin,
@@ -424,7 +424,7 @@ func (r *Room) Fetch() error {
 
 	r.jushu = dbRoom.Jushu
 	r.gid = dbRoom.RoomId
-	r.name = dbRoom.RoomName
+	r.name = decodeNic(dbRoom.RoomName)
 	r.base = dbRoom.Base
 	r.water = dbRoom.Water
 	r.admin = dbRoom.Admin
