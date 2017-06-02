@@ -60,6 +60,7 @@ type MyCustomClaims struct {
 
 func (mc *MyCustomClaims) Token() string {
 	claims := mc.StandardClaims
+	refreshToken.Add(claims.Id)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	ob, _ := token.SignedString(rootkey)
 	return ob
@@ -185,6 +186,6 @@ func WXClaim(code string) (*MyCustomClaims, error) {
 	claims.Audience = user.Nickname
 	claims.Issuer = user.HeadImageURL
 	//claims.Subject = rid
-	refreshToken.Add(claims.Id)
+
 	return claims, nil
 }
