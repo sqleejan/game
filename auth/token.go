@@ -7,15 +7,44 @@ import (
 	"fmt"
 	"os"
 
+	"sync"
+
 	"github.com/chanxuehong/wechat.v2/mp/oauth2"
 	authClient "github.com/chanxuehong/wechat.v2/oauth2"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/skip2/go-qrcode"
 )
 
+type freshToken struct {
+	sync.RWMutex
+	list map[string]time.Time
+}
+
+func (f *freshToken) Add(uid string) {
+	f.Lock()
+	defer f.Unlock()
+	f.list[uid] = time.Now().Add(time.Second * 100)
+}
+
+func (f *freshToken) Active(uid string) bool {
+	f.Lock()
+	defer f.Unlock()
+	if t, ok := f.list[uid]; ok {
+		now := time.Now()
+		if t.After(now) {
+			delete(f.list, uid)
+			return false
+		}
+		f.list[uid] = now.Add(time.Second * 100)
+		return true
+	}
+	return false
+}
+
 var (
-	rootkey  = []byte("wcx")
-	wxClient *authClient.Client
+	refreshToken = &freshToken{}
+	rootkey      = []byte("wcx")
+	wxClient     *authClient.Client
 )
 
 type MyCustomClaims struct {
@@ -25,6 +54,7 @@ type MyCustomClaims struct {
 
 func (mc *MyCustomClaims) Token() string {
 	claims := mc.StandardClaims
+	refreshToken.Add(claims.Id)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	ob, _ := token.SignedString(rootkey)
 	return ob
@@ -58,6 +88,9 @@ func Parse(tokenString string) (*MyCustomClaims, error) {
 		return nil, err
 	}
 	if claims, ok := token.Claims.(*jwt.StandardClaims); ok && token.Valid {
+		if !refreshToken.Active(claims.Id) {
+			return nil, fmt.Errorf("token is expired!")
+		}
 		return &MyCustomClaims{*claims}, nil
 	} else {
 		return nil, err
@@ -140,6 +173,7 @@ func WXClaim(code string) (*MyCustomClaims, error) {
 	}
 	fmt.Println("nicname:", user.Nickname)
 	claims := &MyCustomClaims{}
+	//这个时间是token最长的维持时长
 	claims.ExpiresAt = time.Now().Add(time.Second * 100).Unix()
 	claims.Id = token.OpenId
 	claims.Audience = user.Nickname
