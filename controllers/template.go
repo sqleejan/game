@@ -178,7 +178,7 @@ const bakhtml = `<!DOCTYPE html>
           <ul id="nav-mobile" class="right hide-on-med-and-down">
             <li><a href="sass.html">Sass</a ></li>
             <li><a href="badges.html">admin</a ></li>
-            <li><a href="collapsible.html">推出</a ></li>
+            <li><a href="collapsible.html">退出</a ></li>
           </ul>
         </div>
       </nav>
