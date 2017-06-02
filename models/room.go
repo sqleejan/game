@@ -114,7 +114,10 @@ type Mark struct {
 type resList []*result
 
 func (s resList) Less(i, j int) bool {
-	return s[i].score > s[j].score
+	if s[i].bay == 0 {
+		return true
+	}
+	return s[i].bay > s[j].bay
 }
 
 func (s resList) Len() int {
@@ -137,8 +140,12 @@ func (room *Room) makeReport(rs []*result, redid string) *Marks {
 	//add
 	lenrs := len(rs)
 	pailist := rs[:lenrs-1]
-	sort.Sort(resList(pailist))
-	pailist = append(pailist, rs[lenrs-1])
+	if lenrs > 1 {
+		sort.Sort(resList(pailist))
+		pailist = append(pailist, rs[lenrs-1])
+	} else {
+		pailist = rs
+	}
 
 	for _, r := range pailist {
 		var nicname string
