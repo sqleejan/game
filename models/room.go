@@ -115,7 +115,7 @@ type resList []*result
 
 func (s resList) Less(i, j int) bool {
 	if s[i].bay == 0 {
-		return true
+		return false
 	}
 	return s[i].bay > s[j].bay
 }
