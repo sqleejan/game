@@ -91,6 +91,7 @@ func Parse(tokenString string) (*MyCustomClaims, error) {
 	}
 	if claims, ok := token.Claims.(*jwt.StandardClaims); ok && token.Valid {
 		if !refreshToken.Active(claims.Id) {
+			fmt.Println(claims.Id, "token is expired!")
 			return nil, fmt.Errorf("token is expired!")
 		}
 		return &MyCustomClaims{*claims}, nil
@@ -176,7 +177,7 @@ func WXClaim(code string) (*MyCustomClaims, error) {
 	fmt.Println("nicname:", user.Nickname)
 	claims := &MyCustomClaims{}
 	//这个时间是token最长的维持时长
-	claims.ExpiresAt = time.Now().Add(time.Second * 100).Unix()
+	claims.ExpiresAt = time.Now().Add(time.Hour * 36).Unix()
 	claims.Id = token.OpenId
 	claims.Audience = user.Nickname
 	claims.Issuer = user.HeadImageURL
