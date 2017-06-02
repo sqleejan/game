@@ -140,7 +140,7 @@ func WXClaim(code string) (*MyCustomClaims, error) {
 	}
 	fmt.Println("nicname:", user.Nickname)
 	claims := &MyCustomClaims{}
-	claims.ExpiresAt = time.Now().Add(time.Hour * 24).Unix()
+	claims.ExpiresAt = time.Now().Add(time.Second * 100).Unix()
 	claims.Id = token.OpenId
 	claims.Audience = user.Nickname
 	claims.Issuer = user.HeadImageURL
