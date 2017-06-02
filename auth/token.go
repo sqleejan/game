@@ -27,6 +27,7 @@ func (f *freshToken) Add(uid string) {
 }
 
 func (f *freshToken) Active(uid string) bool {
+	fmt.Println("active", f.list[uid], uid)
 	f.Lock()
 	defer f.Unlock()
 	if t, ok := f.list[uid]; ok {
