@@ -23,7 +23,7 @@ type freshToken struct {
 func (f *freshToken) Add(uid string) {
 	f.Lock()
 	defer f.Unlock()
-	f.list[uid] = time.Now().Add(time.Second * 100)
+	f.list[uid] = time.Now().Add(time.Second * 10000)
 	//fmt.Println("add", f.list[uid], uid)
 }
 
@@ -39,7 +39,7 @@ func (f *freshToken) Active(uid string) bool {
 			delete(f.list, uid)
 			return false
 		}
-		f.list[uid] = now.Add(time.Second * 100)
+		f.list[uid] = now.Add(time.Second * 10000)
 		return true
 	}
 	return false
