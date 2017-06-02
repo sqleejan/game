@@ -7,12 +7,12 @@ const (
   <head>
     <meta charset="utf-8">
     <title>Vue.js grid component example</title>
-    <link rel="stylesheet" href="/static/css/style_grid.css">
-    <link rel="stylesheet" href="/static/css/style_modal.css">
+    <link rel="stylesheet" href="/bg/static/css/style_grid.css">
+    <link rel="stylesheet" href="/bg/static/css/style_modal.css">
        
     <!-- Delete ".min" for console warnings in development -->
-    <script src="/static/js/vue_ok.js"></script>
-    <script src="/static/js/vue-resource.js"></script>
+    <script src="/bg/static/js/vue_ok.js"></script>
+    <script src="/bg/static/js/vue-resource.js"></script>
     </head>
   <body>
     <script>
@@ -161,24 +161,16 @@ const (
 )
 
 const bakhtml = `<!DOCTYPE html>
-<html lang="en">
+<html lang="zh">
 <head>
   <meta charset="UTF-8">
-  <title>Document</title>
+  <title>欢乐派送管理后台</title>
   <link href="http://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   <link rel="stylesheet" href="/bg/static/assets/css/materialize.css">
   <link rel="stylesheet" href="/bg/static/assets/css/toastr.min.css" type="text/css" />
-
   <link rel="stylesheet" href="/bg/static/css/main.css" media="screen" title="no title" charset="utf-8">
 </head>
 <body>
-  <script src="/bg/static/assets/js/jq.js" charset="utf-8"></script>
-      <script type="text/javascript">
-      $().ready(function(){
-        var token={{.Token}} 
-        sessionStorage.admin = token
-       })
-      </script>
 
       <nav class="top red darken-4">
         <div class="nav-wrapper">
@@ -195,9 +187,10 @@ const bakhtml = `<!DOCTYPE html>
           <ul class="list z-depth-5 blue-grey darken-4 clearfix">
             <li class="blue-grey waves-effect waves-light btn" id="roomlist">房间列表</li>
             <li class="blue-grey waves-effect waves-light btn" id="roombug">调度服务</li>
+            <li class="blue-grey waves-effect waves-light btn" id="admintele">设置联系方式</li>
           </ul>
         </div>
-        <div class="col s10">
+        <div class="col s10 template">
           <div class="frombox">
             <div class="search left">
               <div class="left">关键字：</div>
@@ -208,6 +201,7 @@ const bakhtml = `<!DOCTYPE html>
             <a class='dropdown-button btn red left dropdown1' href='#' data-activates='dropdown1'>房间状态</a >
 
             <ul id='dropdown1' class='dropdown-content'>
+              <li class="timeover"><a href="#!">申请中</a ></li>
               <li class="showactive"><a href="#!">激活</a ></li>
               <li class="useactive"><a href="#!">使用中</a ></li>
               <li class="timeovering"><a href="#!">快到期</a ></li>
@@ -289,6 +283,11 @@ const bakhtml = `<!DOCTYPE html>
             <li class="waves-effect page"><a href="#!"></a ></li>
             <li class="waves-effect next"><a href="#!"><i class="material-icons">chevron_right</i></a ></li>
           </ul>
+          <ul class="admintele">
+            <li>管理员联系方式：</li>
+            <li><input type="text" class="adminteleinput"></li>
+            <li><a class="waves-effect waves-light btn" id="pushtele">确认</a ></li>
+          </ul>
         </div>
       </div>
       <footer class="page-footer red darken-4">
@@ -301,7 +300,7 @@ const bakhtml = `<!DOCTYPE html>
       </footer>
       <div class="mask">
       </div>
-      <div class="mask-time pupbox" >
+      <div class="mask-time pupbox">
         <ul>
           <li>
             <div class="roomtimeinput">
@@ -314,54 +313,49 @@ const bakhtml = `<!DOCTYPE html>
         </ul>
       </div>
       <div class="mask-room pupbox">
-        <table>
-          <thead >
-            <tr>
-                <th>Name</th>
-                <th>Item Name</th>
-                <th>Item Price</th>
-                <th>Item Price</th>
-                <th>Item Price</th>
-                <th>Item Price</th>
-                <th>Item Price</th>
-            </tr>
-          </thead>
+        <div class="roomBillInfbox">
 
-          <tbody class="roombill">
-            <tr>
-              <td>Alvin</td>
-              <td>Eclair</td>
-              <td>$0.87</td>
-            </tr>
-            <tr>
-              <td>Alan</td>
-              <td>Jellybean</td>
-              <td>$3.76</td>
-            </tr>
-            <tr>
-              <td>Jonathan</td>
-              <td>Lollipop</td>
-              <td>$7.00</td>
-            </tr>
-          </tbody>
-        </table>
+        </div>
+        <div class="preloader-wrapper loading">
+          <div class="spinner-layer spinner-red-only">
+            <div class="circle-clipper left">
+              <div class="circle"></div>
+            </div><div class="gap-patch">
+              <div class="circle"></div>
+            </div><div class="circle-clipper right">
+              <div class="circle"></div>
+            </div>
+          </div>
+        </div>
+
+        <ul class="pagination">
+          <li class="waves-effect page2"><a href="#!"></a ></li>
+          <li class="waves-effect next2 btn"><a href="#!">加载更多</a ></li>
+        </ul>
+
       </div>
       <div class="preloader-wrapper big active tips">
-  <div class="spinner-layer spinner-red">
-    <div class="circle-clipper left">
-      <div class="circle"></div>
-    </div><div class="gap-patch">
-      <div class="circle"></div>
-    </div><div class="circle-clipper right">
-      <div class="circle"></div>
-    </div>
-  </div>
-</div>
+        <div class="spinner-layer spinner-red">
+          <div class="circle-clipper left">
+            <div class="circle"></div>
+          </div><div class="gap-patch">
+            <div class="circle"></div>
+          </div><div class="circle-clipper right">
+            <div class="circle"></div>
+          </div>
+        </div>
+      </div>
+      
 
-
+<script src="/bg/static/assets/js/jq.js" charset="utf-8"></script>
 <script src="/bg/static/assets/js/toastr.js"></script>
 <script src="/bg/static/assets/js/materialize.min.js"></script>
-
+<script type="text/javascript">
+$().ready(function(){
+  var token = {{.Token}}
+  sessionStorage.admin = token
+})
+</script>
 <script src="/bg/static/js/main.js" charset="utf-8"></script>
 
 </body>
