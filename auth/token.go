@@ -42,9 +42,11 @@ func (f *freshToken) Active(uid string) bool {
 }
 
 var (
-	refreshToken = &freshToken{}
-	rootkey      = []byte("wcx")
-	wxClient     *authClient.Client
+	refreshToken = &freshToken{
+		list: map[string]time.Time{},
+	}
+	rootkey  = []byte("wcx")
+	wxClient *authClient.Client
 )
 
 type MyCustomClaims struct {
