@@ -24,6 +24,7 @@ func (f *freshToken) Add(uid string) {
 	f.Lock()
 	defer f.Unlock()
 	f.list[uid] = time.Now().Add(time.Second * 100)
+	fmt.Println("add", f.list[uid], uid)
 }
 
 func (f *freshToken) Active(uid string) bool {
