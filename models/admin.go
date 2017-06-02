@@ -107,7 +107,7 @@ type intKeyPair struct {
 type sortSlice []*intKeyPair
 
 func (s sortSlice) Less(i, j int) bool {
-	return s[i].value < s[j].value
+	return s[i].value > s[j].value
 }
 
 func (s sortSlice) Len() int {
