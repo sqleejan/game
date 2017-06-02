@@ -101,7 +101,7 @@ func (lreq *ListReq) StatByte() byte {
 
 type intKeyPair struct {
 	key   int
-	value int
+	value int64
 }
 
 type sortSlice []*intKeyPair
@@ -144,7 +144,7 @@ func (rl RLConvert) Convert(listreq *ListReq, page int, size int) interface{} {
 	for k := range leftList {
 		//ros.CreateAt.Unix()
 		index := k
-		list = append(list, &intKeyPair{index, index % 8000})
+		list = append(list, &intKeyPair{index, leftList[k].CreateAt.Unix()})
 	}
 	sort.Sort(list)
 	resp := &struct {
