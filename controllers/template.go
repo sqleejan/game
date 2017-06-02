@@ -176,9 +176,8 @@ const bakhtml = `<!DOCTYPE html>
         <div class="nav-wrapper">
           <a href=" " class="brand-logo">后台管理系统</a >
           <ul id="nav-mobile" class="right hide-on-med-and-down">
-            <li><a href="sass.html">Sass</a ></li>
-            <li><a href="badges.html">admin</a ></li>
-            <li><a href="collapsible.html">退出</a ></li>
+            <li><a class="adminname"></a ></li>
+            <li><a href=" ">退出</a ></li>
           </ul>
         </div>
       </nav>
