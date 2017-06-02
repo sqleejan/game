@@ -111,6 +111,20 @@ type Mark struct {
 	Nickname string
 }
 
+type resList []*result
+
+func (s resList) Less(i, j int) bool {
+	return s[i].score > s[j].score
+}
+
+func (s resList) Len() int {
+	return len(s)
+}
+
+func (s resList) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+
 func (room *Room) makeReport(rs []*result, redid string) *Marks {
 	marks := []Mark{}
 	if len(rs) == 0 {
@@ -120,7 +134,13 @@ func (room *Room) makeReport(rs []*result, redid string) *Marks {
 	}
 	water := 0
 	nn := ""
-	for _, r := range rs {
+	//add
+	lenrs := len(rs)
+	pailist := rs[:lenrs-1]
+	sort.Sort(resList(pailist))
+	pailist = append(pailist, rs[lenrs-1])
+
+	for _, r := range pailist {
 		var nicname string
 		player, ok := room.users[r.custom]
 		if ok {
