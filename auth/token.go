@@ -28,9 +28,9 @@ func (f *freshToken) Add(uid string) {
 }
 
 func (f *freshToken) Active(uid string) bool {
-	fmt.Println("active", f.list[uid], uid)
 	f.Lock()
 	defer f.Unlock()
+	fmt.Println("active", f.list[uid], uid)
 	if t, ok := f.list[uid]; ok {
 		now := time.Now()
 		if t.After(now) {
@@ -91,7 +91,7 @@ func Parse(tokenString string) (*MyCustomClaims, error) {
 		return nil, err
 	}
 	if claims, ok := token.Claims.(*jwt.StandardClaims); ok && token.Valid {
-		if !refreshToken.Active(claims.Id) {
+		if refreshToken.Active(claims.Id) {
 			fmt.Println(claims.Id, "token is expired!")
 			return nil, fmt.Errorf("token is expired!")
 		}
