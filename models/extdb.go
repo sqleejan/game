@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"sort"
 	"strconv"
 	"sync"
 	"time"
@@ -132,6 +133,20 @@ func RedInsert(roomid int, redid string, uid string, nicname string, score strin
 	return dbred.Insert()
 }
 
+type redPList []*DBRed
+
+func (s redPList) Less(i, j int) bool {
+	return s[i].Id > s[j].Id
+}
+
+func (s redPList) Len() int {
+	return len(s)
+}
+
+func (s redPList) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+
 func RedList(roomid int, redid string) ([]*DBRed, error) {
 	res := []*DBRed{}
 	query := fmt.Sprintf(`select * from db_red where room_id=? and red_id=?`)
@@ -139,6 +154,7 @@ func RedList(roomid int, redid string) ([]*DBRed, error) {
 	if err != nil {
 		return nil, err
 	}
+	sort.Sort(redPList(res))
 
 	room, ok := RoomList[roomid]
 	if ok {
