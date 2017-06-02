@@ -98,6 +98,26 @@ func (lreq *ListReq) StatByte() byte {
 	}
 	return stat
 }
+
+type intKeyPair struct {
+	key   int
+	value int
+}
+
+type sortSlice []*intKeyPair
+
+func (s sortSlice) Less(i, j int) bool {
+	return s[i].value < s[j].value
+}
+
+func (s sortSlice) Len() int {
+	return len(s)
+}
+
+func (s sortSlice) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+
 func (rl RLConvert) Convert(listreq *ListReq, page int, size int) interface{} {
 	fmt.Println(len(rl))
 	leftList := map[int]*Room{}
@@ -120,11 +140,13 @@ func (rl RLConvert) Convert(listreq *ListReq, page int, size int) interface{} {
 		}
 	}
 
-	list := []int{}
+	list := sortSlice{}
 	for k := range leftList {
-		list = append(list, k)
+		//ros.CreateAt.Unix()
+		index := k
+		list = append(list, &intKeyPair{index, index % 8000})
 	}
-	sort.Ints(list)
+	sort.Sort(list)
 	resp := &struct {
 		Pagination
 		Data []*RoomResponeNoUsers `json:"data"`
@@ -143,7 +165,7 @@ func (rl RLConvert) Convert(listreq *ListReq, page int, size int) interface{} {
 	}
 	data := []*RoomResponeNoUsers{}
 	for _, v := range list[start:end] {
-		data = append(data, leftList[v].ConvertNoUsers())
+		data = append(data, leftList[v.key].ConvertNoUsers())
 	}
 	resp.Data = data
 	return resp
