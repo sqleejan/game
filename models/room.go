@@ -1087,7 +1087,7 @@ func (r *Room) Diver(master string, req *DiverReq) (*Marks, error) {
 	if r.HaveScore() {
 		return nil, fmt.Errorf("releave score!")
 	}
-
+	
 	if req.Diver < r.RedCountDown || req.Diver > r.RedCountUp {
 		return nil, fmt.Errorf("Diver Count overflow")
 	}
@@ -1095,6 +1095,9 @@ func (r *Room) Diver(master string, req *DiverReq) (*Marks, error) {
 	if req.RedAmount < r.RedDown || req.RedAmount > r.RedUp {
 		return nil, fmt.Errorf("RedAmount overflow")
 	}
+	r.locker.Lock()
+	r.hasScore = true
+	r.locker.Unlock()
 
 	rd := <-r.redhats
 	leaveRed := rd.count
@@ -1138,9 +1141,9 @@ func (r *Room) Diver(master string, req *DiverReq) (*Marks, error) {
 	r.jushu += 1
 	emsay(r.gid, fmt.Sprintf(`{"type":"redhat","redid":"%s","nicname":"%s","master":"%s","amount":%v,"diver":%d,"jushu":%d}`, redid, master, masterNic, req.RedAmount, req.Diver, r.jushu))
 	response := []*result{}
-	r.locker.Lock()
-	r.hasScore = true
-	r.locker.Unlock()
+	// r.locker.Lock()
+	// r.hasScore = true
+	// r.locker.Unlock()
 	nowcount := 0
 	timecount := 0
 	//exitcount=int(rd.timeout.Seconds())*2
