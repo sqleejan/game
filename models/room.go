@@ -950,7 +950,7 @@ func (r *Room) ConfigRedhat(rr *RedReq, cancel bool) error {
 		return fmt.Errorf("count overflow")
 	}
 	//r.gainlimit = rr.ScoreLimt
-
+	r.redhats = make(chan *redhat, rr.Number)
 	if rr.Number == 1 {
 		r.redhats <- &redhat{
 			//amount:  int(rr.RedAmount * 100),
@@ -959,13 +959,13 @@ func (r *Room) ConfigRedhat(rr *RedReq, cancel bool) error {
 			base:    r.base,
 			end:     true,
 		}
-		r.locker.Lock()
-		r.hasRedhat = true
-		r.locker.Unlock()
+		// r.locker.Lock()
+		// r.hasRedhat = true
+		// r.locker.Unlock()
 		r.SetStatus(Stat_Conifgzhuang)
 		return nil
 	}
-	r.redhats = make(chan *redhat, rr.Number)
+	//r.redhats = make(chan *redhat, rr.Number)
 	for i := 0; i < rr.Number-1; i++ {
 		r.redhats <- &redhat{
 			//amount:  int(rr.RedAmount * 100),
