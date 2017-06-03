@@ -57,6 +57,8 @@ type Room struct {
 	results      map[string]*result
 	status       int
 	jushu        int
+	zRet         chan string
+	isRet        bool
 	//	gainlimit    int
 	Scope
 }
@@ -887,30 +889,91 @@ func (r *Room) MasterRedhat(master string) error {
 	// if !r.HaveRedhat() {
 	// 	return fmt.Errorf("have not redhat!")
 	// }
-	if r.status != Stat_Qizhuang {
-		return fmt.Errorf("the room stat is %d!", r.status)
-	}
+
 	r.locker.Lock()
 	defer r.locker.Unlock()
+	if r.status == Stat_Qiangzhuang {
+		if _, ok := r.results[master]; r.isRet && !ok {
+			r.zRet <- master
+			r.results[master] = nil
+		}
+	}
+
+	if r.status != Stat_Qizhuang {
+
+		return fmt.Errorf("the room stat is %d!", r.status)
+	}
+
 	if r.redhatMaster != "" {
 		return fmt.Errorf("master is someone else!")
 	}
+	//add 抢庄纪录
+	r.zRet = make(chan string, 10)
+	r.zRet <- master
+	r.isRet = true
+	r.results = make(map[string]*result)
+	r.results[master] = nil
+	go func() {
+		defer close(r.zRet)
+		count := 0
+		latech := time.After(time.Second * 3)
+
+		for {
+			select {
+			case <-latech:
+				r.isRet = false
+				nicname := ""
+				mp, ok := r.users[master]
+				if ok {
+					nicname = mp.NicName
+				}
+				emsay(r.gid, fmt.Sprintf(`{"type":"message","msg":"\"%s\" 抢到庄家.请点击连庄按钮配置连庄次数"}`, nicname))
+				return
+			case ms := <-r.zRet:
+				count += 1
+				nicname := ""
+				mp, ok := r.users[ms]
+				if ok {
+					nicname = mp.NicName
+				}
+				emsay(r.gid, fmt.Sprintf(`{"type":"message","msg":"\"%s\" 前来抢庄"}`, nicname))
+				if count >= 5 {
+					r.isRet = false
+					nicname := ""
+					mp, ok := r.users[master]
+					if ok {
+						nicname = mp.NicName
+					}
+					emsay(r.gid, fmt.Sprintf(`{"type":"message","msg":"\"%s\" 抢到庄家.请点击连庄按钮配置连庄次数"}`, nicname))
+					go func() {
+						<-r.zRet
+					}()
+					time.Sleep(time.Millisecond * 100)
+					return
+				}
+
+			}
+		}
+	}()
+	//add end...
 	r.redhatMaster = master
 	r.status = Stat_Qiangzhuang
-	var nicname string
-	u, _ := cemsdk.GetUser(master)
-	if u != nil {
-		nicname = u.Nicname
-	}
-	mp, ok := r.users[master]
-	if ok {
-		nicname = mp.NicName
-	}
+	// var nicname string
+	// u, _ := cemsdk.GetUser(master)
+	// if u != nil {
+	// 	nicname = u.Nicname
+	// }
+	// mp, ok := r.users[master]
+	// if ok {
+	// 	nicname = mp.NicName
+	// }
+
 	// cemsdk.SendMessage("admin", "chatgroups", []string{r.id}, map[string]string{
 	// 	"type": "txt",
 	// 	"msg":  fmt.Sprintf("%s[%s] 抢到庄家", nicname, master),
 	// }, map[string]string{})
-	emsay(r.gid, fmt.Sprintf(`{"type":"message","msg":"\"%s\" 抢到庄家.请点击连庄按钮配置连庄次数"}`, nicname))
+
+	//emsay(r.gid, fmt.Sprintf(`{"type":"message","msg":"\"%s\" 抢到庄家.请点击连庄按钮配置连庄次数"}`, nicname))
 	return nil
 }
 
