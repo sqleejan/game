@@ -962,6 +962,7 @@ func (r *Room) ConfigRedhat(rr *RedReq, cancel bool) error {
 		r.locker.Lock()
 		r.hasRedhat = true
 		r.locker.Unlock()
+		r.SetStatus(Stat_Conifgzhuang)
 		return nil
 	}
 	r.redhats = make(chan *redhat, rr.Number)
