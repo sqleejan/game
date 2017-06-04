@@ -1087,7 +1087,7 @@ func (r *Room) Diver(master string, req *DiverReq) (*Marks, error) {
 	if r.HaveScore() {
 		return nil, fmt.Errorf("releave score!")
 	}
-	
+
 	if req.Diver < r.RedCountDown || req.Diver > r.RedCountUp {
 		return nil, fmt.Errorf("Diver Count overflow")
 	}
