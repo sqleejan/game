@@ -837,6 +837,7 @@ func (r *Room) SendRedhat() error {
 		r.start()
 	}
 
+	//add 抢庄纪录
 	r.zRet = make(chan string, 10)
 	//r.zRet <- master
 	r.isRet = true
@@ -922,6 +923,7 @@ func (r *Room) SendRedhat() error {
 			}
 		}
 	}()
+	//add end
 
 	r.SetStatus(Stat_Qizhuang)
 	return nil
@@ -1004,6 +1006,7 @@ func (r *Room) MasterRedhat(master string) error {
 	if !r.isRet {
 		return fmt.Errorf("qiangzhuang time out!")
 	}
+	r.results[master] = nil
 	r.redhatMaster = master
 	r.status = Stat_Qiangzhuang
 	// var nicname string
