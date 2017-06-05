@@ -1000,6 +1000,10 @@ func (r *Room) MasterRedhat(master string) error {
 	//add 抢庄纪录
 
 	//add end...
+	r.zRet <- master
+	if !r.isRet {
+		return fmt.Errorf("qiangzhuang time out!")
+	}
 	r.redhatMaster = master
 	r.status = Stat_Qiangzhuang
 	// var nicname string
