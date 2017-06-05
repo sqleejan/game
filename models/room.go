@@ -885,6 +885,7 @@ func (r *Room) SendRedhat() error {
 					r.status = 0
 					bs, _ := json.Marshal(jt)
 					emsay(r.gid, string(bs))
+					return
 				}
 
 				if lens > 5 {
