@@ -836,6 +836,93 @@ func (r *Room) SendRedhat() error {
 	if r.duration != 0 {
 		r.start()
 	}
+
+	r.zRet = make(chan string, 10)
+	//r.zRet <- master
+	r.isRet = true
+	r.results = make(map[string]*result)
+	//r.results[master] = nil
+	go func() {
+		defer func() {
+			latech_end := time.After(time.Millisecond * 100)
+			for {
+				select {
+				case <-latech_end:
+					close(r.zRet)
+					return
+				case <-r.zRet:
+				}
+			}
+
+		}()
+		count := 0
+		latech := time.After(time.Second * 4)
+		records := []string{}
+		for {
+			select {
+			case <-latech:
+				r.isRet = false
+				// nicname := ""
+				// mp, ok := r.users[master]
+				// if ok {
+				// 	nicname = mp.NicName
+				// }
+				// emsay(r.gid, fmt.Sprintf(`{"type":"message","msg":"\"%s\" 抢到庄家.请点击连庄按钮配置连庄次数"}`, nicname))
+				lens := len(records)
+				jt := struct {
+					Type   string   `json:"type"`
+					Users  []string `json:"users"`
+					Len    int      `json:"len"`
+					Master string   `json:"master"`
+				}{
+					Type:  "zhuang",
+					Users: records,
+					Len:   lens,
+					//Master: records[0],
+				}
+				if lens == 0 {
+					r.status = 0
+					bs, _ := json.Marshal(jt)
+					emsay(r.gid, string(bs))
+				}
+
+				if lens > 5 {
+					records = records[:5]
+				}
+				jt.Master = records[0]
+
+				bs, _ := json.Marshal(jt)
+				emsay(r.gid, string(bs))
+				return
+			case ms := <-r.zRet:
+				count += 1
+				nicname := ""
+				mp, ok := r.users[ms]
+				if ok {
+					nicname = mp.NicName
+					records = append(records, nicname)
+				}
+
+				// emsay(r.gid, fmt.Sprintf(`{"type":"message","msg":"\"%s\" 前来抢庄"}`, nicname))
+				// if count >= 5 {
+				// 	r.isRet = false
+				// 	nicname := ""
+				// 	mp, ok := r.users[master]
+				// 	if ok {
+				// 		nicname = mp.NicName
+				// 	}
+				// 	emsay(r.gid, fmt.Sprintf(`{"type":"message","msg":"\"%s\" 抢到庄家.请点击连庄按钮配置连庄次数"}`, nicname))
+				// 	go func() {
+				// 		<-r.zRet
+				// 	}()
+				// 	time.Sleep(time.Millisecond * 100)
+				// 	return
+				// }
+
+			}
+		}
+	}()
+
 	r.SetStatus(Stat_Qizhuang)
 	return nil
 	/*
@@ -886,6 +973,9 @@ func (r *Room) MasterRedhat(master string) error {
 	if !r.Active() {
 		return fmt.Errorf("the room is disable")
 	}
+	if !r.isRet {
+		return fmt.Errorf("not allow master redhat now!")
+	}
 	// if !r.HaveRedhat() {
 	// 	return fmt.Errorf("have not redhat!")
 	// }
@@ -908,53 +998,7 @@ func (r *Room) MasterRedhat(master string) error {
 		return fmt.Errorf("master is someone else!")
 	}
 	//add 抢庄纪录
-	r.zRet = make(chan string, 10)
-	r.zRet <- master
-	r.isRet = true
-	r.results = make(map[string]*result)
-	r.results[master] = nil
-	go func() {
-		defer close(r.zRet)
-		count := 0
-		latech := time.After(time.Second * 3)
 
-		for {
-			select {
-			case <-latech:
-				r.isRet = false
-				nicname := ""
-				mp, ok := r.users[master]
-				if ok {
-					nicname = mp.NicName
-				}
-				emsay(r.gid, fmt.Sprintf(`{"type":"message","msg":"\"%s\" 抢到庄家.请点击连庄按钮配置连庄次数"}`, nicname))
-				return
-			case ms := <-r.zRet:
-				count += 1
-				nicname := ""
-				mp, ok := r.users[ms]
-				if ok {
-					nicname = mp.NicName
-				}
-				emsay(r.gid, fmt.Sprintf(`{"type":"message","msg":"\"%s\" 前来抢庄"}`, nicname))
-				if count >= 5 {
-					r.isRet = false
-					nicname := ""
-					mp, ok := r.users[master]
-					if ok {
-						nicname = mp.NicName
-					}
-					emsay(r.gid, fmt.Sprintf(`{"type":"message","msg":"\"%s\" 抢到庄家.请点击连庄按钮配置连庄次数"}`, nicname))
-					go func() {
-						<-r.zRet
-					}()
-					time.Sleep(time.Millisecond * 100)
-					return
-				}
-
-			}
-		}
-	}()
 	//add end...
 	r.redhatMaster = master
 	r.status = Stat_Qiangzhuang
