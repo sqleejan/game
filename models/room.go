@@ -1420,6 +1420,7 @@ func (r *Room) redhatClear() {
 	defer r.locker.Unlock()
 	r.redhatMaster = ""
 	r.hasRedhat = false
+	r.isRet=false
 	//	r.gainlimit = -3000
 	r.status = Stat_Kongxian
 }
