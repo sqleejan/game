@@ -862,11 +862,10 @@ func (r *Room) SendRedhat() error {
 		for {
 			select {
 			case <-latech:
-				r.redhatMaster = ""
-				r.hasRedhat = false
+				
 				r.isRet = false
 				//	r.gainlimit = -3000
-				r.status = Stat_Kongxian
+				
 				// nicname := ""
 				// mp, ok := r.users[master]
 				// if ok {
@@ -886,7 +885,9 @@ func (r *Room) SendRedhat() error {
 					//Master: records[0],
 				}
 				if lens == 0 {
-					r.status = 0
+					r.status = Stat_Kongxian
+					r.redhatMaster = ""
+					r.hasRedhat = false
 					bs, _ := json.Marshal(jt)
 					emsay(r.gid, string(bs))
 					return
