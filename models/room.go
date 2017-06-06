@@ -862,7 +862,11 @@ func (r *Room) SendRedhat() error {
 		for {
 			select {
 			case <-latech:
+				r.redhatMaster = ""
+				r.hasRedhat = false
 				r.isRet = false
+				//	r.gainlimit = -3000
+				r.status = Stat_Kongxian
 				// nicname := ""
 				// mp, ok := r.users[master]
 				// if ok {
@@ -1420,7 +1424,7 @@ func (r *Room) redhatClear() {
 	defer r.locker.Unlock()
 	r.redhatMaster = ""
 	r.hasRedhat = false
-	r.isRet=false
+	r.isRet = false
 	//	r.gainlimit = -3000
 	r.status = Stat_Kongxian
 }
