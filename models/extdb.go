@@ -225,7 +225,8 @@ func idUp() (int, error) {
 func FilesInit() error {
 	fi, err := os.Stat(".roomid")
 	if err != nil {
-		if err == os.ErrNotExist {
+		//fmt.Println(os.IsNotExist(err))
+		if os.IsNotExist(err) {
 			errs := ioutil.WriteFile(".roomid", []byte(strconv.Itoa(0)), 0777)
 			if errs != nil {
 				return err
@@ -235,13 +236,13 @@ func FilesInit() error {
 		}
 
 	}
-	if fi.IsDir() {
+	if fi != nil && fi.IsDir() {
 		return fmt.Errorf("not dir")
 	}
 
 	mfi, err := os.Stat(".amsg")
 	if err != nil {
-		if err == os.ErrNotExist {
+		if os.IsNotExist(err) {
 			errs := ioutil.WriteFile(".amsg", []byte(`管理员信息`), 0777)
 			if errs != nil {
 				return err
@@ -251,7 +252,7 @@ func FilesInit() error {
 		}
 
 	}
-	if mfi.IsDir() {
+	if mfi != nil && mfi.IsDir() {
 		return fmt.Errorf("not dir")
 	}
 
