@@ -857,15 +857,15 @@ func (r *Room) SendRedhat() error {
 
 		}()
 		count := 0
-		latech := time.After(time.Second * 4)
+		latech := time.After(time.Second * 5)
 		records := []string{}
 		for {
 			select {
 			case <-latech:
-				
+
 				r.isRet = false
 				//	r.gainlimit = -3000
-				
+
 				// nicname := ""
 				// mp, ok := r.users[master]
 				// if ok {
@@ -896,6 +896,7 @@ func (r *Room) SendRedhat() error {
 				if lens > 5 {
 					records = records[:5]
 				}
+				jt.Users = records
 				jt.Master = records[0]
 
 				bs, _ := json.Marshal(jt)
